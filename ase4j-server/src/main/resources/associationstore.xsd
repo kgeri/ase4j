@@ -9,9 +9,41 @@
 	<xsd:element name="associationstore">
 		<xsd:complexType>
 			<xsd:sequence>
-				<xsd:element name="objectstore" type="ObjectStoreConfig"></xsd:element>
+				<xsd:element name="objects" type="ObjectStorageConfig"
+					maxOccurs="1" minOccurs="0">
+				</xsd:element>
+				<xsd:element name="associations" type="AssociationStorageConfig"
+					maxOccurs="1" minOccurs="1">
+				</xsd:element>
 			</xsd:sequence>
 		</xsd:complexType>
 	</xsd:element>
+
+
+	<xsd:complexType name="AssociationStorageConfig">
+		<xsd:sequence>
+			<xsd:element name="store" maxOccurs="unbounded"
+				minOccurs="1">
+				<xsd:complexType>
+					<xsd:sequence>
+						<xsd:element name="instance"
+							type="InstanceTypeConfig" maxOccurs="1" minOccurs="0">
+						</xsd:element>
+					</xsd:sequence>
+					<xsd:attribute name="id" type="xsd:string"
+						use="required">
+					</xsd:attribute>
+					<xsd:attribute name="fromStore" type="xsd:string"
+						use="required">
+					</xsd:attribute>
+					<xsd:attribute name="toStore" type="xsd:string"
+						use="required">
+					</xsd:attribute>
+				</xsd:complexType>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+
+    <xsd:attribute name="NewAttribute" type="xsd:string"></xsd:attribute>
 
 </xsd:schema>

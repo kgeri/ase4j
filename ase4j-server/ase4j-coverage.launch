@@ -17,8 +17,8 @@
 <mapEntry key="org.ogreg.common.nio.IndexEntriesTest" value=""/>
 <mapEntry key="org.ogreg.common.nio.NioUtilsTest" value=""/>
 <mapEntry key="org.ogreg.fh4j.FileHashTest" value=""/>
-<mapEntry key="org.ogreg.ostore.ObjectStoreImplTest" value=""/>
-<mapEntry key="org.ogreg.ostore.StringStoreTest" value=""/>
+<mapEntry key="org.ogreg.ostore.file.FileObjectStoreImplTest" value=""/>
+<mapEntry key="org.ogreg.ostore.memory.StringStoreTest" value=""/>
 <mapEntry key="org.ogreg.util.IntSelectorTest" value=""/>
 <mapEntry key="org.ogreg.util.TrieTest" value=""/>
 </mapAttribute>
@@ -28,14 +28,14 @@
 <listEntry value="correctness"/>
 </listAttribute>
 <listAttribute key="org.testng.eclipse.GROUP_LIST_CLASS">
+<listEntry value="org.ogreg.ostore.memory.StringStoreTest"/>
 <listEntry value="org.ogreg.ase4j.AssociationUtilsTest"/>
 <listEntry value="org.ogreg.ase4j.file.AssociationBlockTest"/>
-<listEntry value="org.ogreg.ostore.StringStoreTest"/>
 <listEntry value="org.ogreg.ase4j.file.FileAssociationSolverTest"/>
 <listEntry value="org.ogreg.util.TrieTest"/>
 <listEntry value="org.ogreg.ase4j.file.CachedBlockStoreTest"/>
-<listEntry value="org.ogreg.ostore.ObjectStoreImplTest"/>
 <listEntry value="org.ogreg.common.nio.NioUtilsTest"/>
+<listEntry value="org.ogreg.ostore.file.FileObjectStoreImplTest"/>
 <listEntry value="org.ogreg.util.IntSelectorTest"/>
 <listEntry value="org.ogreg.ase4j.file.FileAssociationStoreImplTest"/>
 <listEntry value="org.ogreg.common.nio.IndexEntriesTest"/>

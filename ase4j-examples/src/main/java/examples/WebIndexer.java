@@ -26,10 +26,10 @@ import org.ogreg.ase4j.Association;
 import org.ogreg.ase4j.AssociationStoreException;
 import org.ogreg.ase4j.file.FileAssociationStoreImpl;
 import org.ogreg.common.utils.SerializationUtils;
-import org.ogreg.ostore.Configuration;
+import org.ogreg.ostore.ObjectStoreManager;
 import org.ogreg.ostore.ObjectStore;
 import org.ogreg.ostore.ObjectStoreException;
-import org.ogreg.ostore.StringStore;
+import org.ogreg.ostore.memory.StringStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
@@ -67,11 +67,13 @@ public class WebIndexer {
 
 		log.info("Initializing index stores.");
 
-		Configuration cfg = new Configuration();
+		ObjectStoreManager cfg = new ObjectStoreManager();
 		cfg.add("ostore.xml");
 
 		StringStore fromStore = SerializationUtils.read(subjectFile, StringStore.class);
-		ObjectStore<Document> documentStore = cfg.createStore(Document.class, documentDir);
+
+		@SuppressWarnings("unchecked")
+		ObjectStore<Document> documentStore = cfg.createStore("index", documentDir);
 
 		store.setFromStore(fromStore);
 		store.setToStore(documentStore);

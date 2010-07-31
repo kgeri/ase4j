@@ -1,7 +1,8 @@
-package org.ogreg.ostore;
+package org.ogreg.ostore.file;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.Flushable;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -10,10 +11,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.ogreg.common.utils.PropertyPathUtils;
+import org.ogreg.common.ConfigurationException;
+import org.ogreg.common.nio.NioSerializer;
+import org.ogreg.common.nio.serializer.SerializerManager;
+import org.ogreg.common.utils.PropertyUtils;
 import org.ogreg.common.utils.SerializationUtils;
+import org.ogreg.ostore.ConfigurableObjectStore;
+import org.ogreg.ostore.ObjectStore;
+import org.ogreg.ostore.ObjectStoreException;
+import org.ogreg.ostore.ObjectStoreManager;
 import org.ogreg.ostore.index.UniqueIndex;
 
 /**
@@ -25,7 +34,8 @@ import org.ogreg.ostore.index.UniqueIndex;
  * 
  * @author Gergely Kiss
  */
-class ObjectStoreImpl<T> implements ObjectStore<T>, Closeable, Flushable {
+public class FileObjectStoreImpl<T> implements ConfigurableObjectStore<T>, Closeable, Flushable {
+
 	/** The entity's field accessors keyed by the field names. */
 	private final Map<String, FieldAccessor> accessors = new HashMap<String, FieldAccessor>();
 
@@ -33,7 +43,7 @@ class ObjectStoreImpl<T> implements ObjectStore<T>, Closeable, Flushable {
 	private final Map<String, UniqueIndex> uniqueIndices = new HashMap<String, UniqueIndex>();
 
 	/** The storage dir of this Object Store. */
-	private final File storageDir;
+	private File storageDir;
 
 	/**
 	 * The field which contains the business key.
@@ -45,15 +55,16 @@ class ObjectStoreImpl<T> implements ObjectStore<T>, Closeable, Flushable {
 	private Field uniqueField;
 
 	/** The Java type stored by this Object Store. */
-	private final Class<T> storedType;
+	private Class<T> storedType;
 
 	/** The cached constructor of the stored Java type. */
-	private final Constructor<T> storedCtor;
+	private Constructor<T> storedCtor;
 
 	/** The "sequence generator". */
 	private AtomicInteger nextKey;
 
-	ObjectStoreImpl(Class<T> type, File storageDir) {
+	@Override
+	public void init(Class<T> type, File storageDir, Map<String, String> params) {
 		this.storedType = type;
 		this.storageDir = storageDir;
 
@@ -68,7 +79,8 @@ class ObjectStoreImpl<T> implements ObjectStore<T>, Closeable, Flushable {
 		}
 
 		try {
-			nextKey = SerializationUtils.read(getSequenceFile(storageDir), AtomicInteger.class);
+			nextKey = SerializationUtils.read(ObjectStoreManager.getSequenceFile(storageDir),
+					AtomicInteger.class);
 		} catch (IOException e) {
 			nextKey = new AtomicInteger();
 		}
@@ -174,7 +186,7 @@ class ObjectStoreImpl<T> implements ObjectStore<T>, Closeable, Flushable {
 
 	@Override
 	public Object getField(long identifier, String fieldName) throws ObjectStoreException {
-		String[] pathElements = PropertyPathUtils.splitFirstPathElement(fieldName);
+		String[] pathElements = PropertyUtils.splitFirstPathElement(fieldName);
 		FieldAccessor accessor = accessors.get(pathElements[0]);
 
 		if (accessor == null) {
@@ -212,7 +224,7 @@ class ObjectStoreImpl<T> implements ObjectStore<T>, Closeable, Flushable {
 	 * @throws IOException
 	 */
 	public void flush() throws IOException {
-		SerializationUtils.write(getSequenceFile(storageDir), nextKey);
+		SerializationUtils.write(ObjectStoreManager.getSequenceFile(storageDir), nextKey);
 
 		for (FieldAccessor accessor : accessors.values()) {
 			accessor.flush();
@@ -220,7 +232,7 @@ class ObjectStoreImpl<T> implements ObjectStore<T>, Closeable, Flushable {
 
 		for (Entry<String, UniqueIndex> e : uniqueIndices.entrySet()) {
 			UniqueIndex idx = e.getValue();
-			idx.saveTo(getIndexFile(storageDir, e.getKey()));
+			idx.saveTo(ObjectStoreManager.getIndexFile(storageDir, e.getKey()));
 		}
 	}
 
@@ -231,31 +243,105 @@ class ObjectStoreImpl<T> implements ObjectStore<T>, Closeable, Flushable {
 		}
 	}
 
-	void addField(FieldAccessor accessor) {
+	private void addField(FieldAccessor accessor) {
 		accessors.put(accessor.getFieldName(), accessor);
 	}
 
-	void addIndex(String fieldName, UniqueIndex idx) {
+	private void addIndex(String fieldName, UniqueIndex idx) {
 		uniqueIndices.put(fieldName, idx);
 	}
 
-	void setUniqueField(Field field) {
-		uniqueField = field;
+	@Override
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public void initProperty(Class<?> type, String propertyName) {
+
+		try {
+			Field field = getField(type, propertyName);
+
+			Class<?> fieldType = field.getType();
+
+			// TODO Custom config for serializers (through property type)
+			NioSerializer<?> s = SerializerManager.findSerializerFor(fieldType);
+
+			FilePropertyStore pstore = new FilePropertyStore();
+			pstore.setType(fieldType);
+			pstore.setSerializer(s);
+			pstore.open(ObjectStoreManager.getPropertyFile(storageDir, field.getName()));
+
+			// TODO Indices for properties
+
+			addField(new FieldPropertyAccessor(field, pstore));
+		} catch (IOException e) {
+			throw new ConfigurationException(e);
+		}
 	}
 
-	static File getIndexFile(File storageDir, String... propertyNames) {
-		return new File(storageDir, PropertyPathUtils.pathToString(propertyNames) + ".uix");
+	@Override
+	public void initIdProperty(Class<?> type, String propertyName, UniqueIndex index) {
+		addIndex(propertyName, index);
+		uniqueField = getField(type, propertyName);
+		initProperty(type, propertyName);
 	}
 
-	static File getPropertyFile(File storageDir, String... propertyNames) {
-		return new File(storageDir, PropertyPathUtils.pathToString(propertyNames) + ".prop");
+	@Override
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public void initExtension(Class<?> type, String propertyName) {
+		Field field = getField(type, propertyName);
+
+		final Pattern extPattern = ObjectStoreManager.getExtensionFileNamePattern(propertyName);
+
+		File[] extStoreFiles = storageDir.listFiles(new FilenameFilter() {
+			@Override
+			public boolean accept(File dir, String name) {
+				return extPattern.matcher(name).matches();
+			}
+		});
+
+		FieldExtensionAccessor accessor = new FieldExtensionAccessor(storageDir, field);
+
+		if (extStoreFiles != null && extStoreFiles.length > 0) {
+			try {
+
+				for (File extStore : extStoreFiles) {
+					Matcher m = extPattern.matcher(extStore.getName());
+					if (m.matches()) {
+						String ename = m.group(1);
+						FilePropertyStore pstore = new FilePropertyStore();
+						pstore.open(extStore);
+						pstore.setSerializer(SerializerManager.findSerializerFor(pstore.getType()));
+
+						accessor.addField(new FieldExtensionAccessor.ValueAccessor(ename, pstore));
+					}
+				}
+			} catch (IOException e) {
+				throw new ConfigurationException(e);
+			}
+		}
+
+		addField(accessor);
 	}
 
-	static File getSequenceFile(File storageDir) {
-		return new File(storageDir, "sequence");
-	}
-
-	static Pattern getExtensionFileNamePattern(String name) {
-		return Pattern.compile(name + "\\.(.*?)\\.prop");
+	/**
+	 * Returns the declared field of the <code>type</code> by its
+	 * <code>name</code>.
+	 * <p>
+	 * As a side effect, the field will be made accessible.
+	 * </p>
+	 * 
+	 * @param type The type which declares the field
+	 * @param name The name of the declared field
+	 * @return
+	 * @throws ConfigurationException
+	 */
+	static Field getField(Class<?> type, String name) {
+		try {
+			Field field = type.getDeclaredField(name);
+			field.setAccessible(true);
+			return field;
+		} catch (SecurityException e) {
+			throw new ConfigurationException(e);
+		} catch (NoSuchFieldException e) {
+			throw new ConfigurationException(e);
+		}
 	}
 }

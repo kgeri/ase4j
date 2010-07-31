@@ -3,14 +3,16 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://ase4j.googlecode.com/schema ../../../main/resources/objectstore.xsd">
 
-	<class name="org.ogreg.ostore.ObjectStoreImplBenchmark$TestData">
-		<id name="url">
-			<index type="trie">
-				<parameter key="dictionary" value="URL" />
-			</index>
-		</id>
+	<store id="test">
+		<class name="org.ogreg.ostore.ObjectStoreImplBenchmark$TestData">
+			<id name="url">
+				<index type="trie">
+					<parameter key="dictionary" value="URL" />
+				</index>
+			</id>
 
-		<property name="created" />
-		<property name="contents" />
-	</class>
+			<property name="created" />
+			<property name="contents" />
+		</class>
+	</store>
 </objectstore>

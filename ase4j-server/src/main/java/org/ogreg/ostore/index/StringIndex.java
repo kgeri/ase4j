@@ -45,17 +45,7 @@ public class StringIndex implements UniqueIndex, Serializable {
 			this.dictionary = idx.dictionary;
 		} else {
 			String dictName = params.get("dictionary");
-
-			// URL dictionary
-			if ("url".equalsIgnoreCase(dictName)) {
-				this.dictionary = TrieDictionary.URL;
-			}
-			// The default dictionary is english
-			else {
-				this.dictionary = TrieDictionary.ENGLISH;
-			}
-			// TODO Custom dictionary by specifying value set
-
+			this.dictionary = TrieDictionary.createByName(dictName);
 			this.toInt = new Trie<Integer>(dictionary);
 		}
 	}

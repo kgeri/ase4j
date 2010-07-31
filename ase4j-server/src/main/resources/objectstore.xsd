@@ -5,7 +5,7 @@
 	<xsd:element name="objectstore">
 		<xsd:complexType>
 			<xsd:complexContent>
-				<xsd:extension base="ObjectStoreConfig"></xsd:extension>
+				<xsd:extension base="ObjectStorageConfig"></xsd:extension>
 			</xsd:complexContent>
 		</xsd:complexType>
 	</xsd:element>
@@ -72,8 +72,8 @@
 		<xsd:complexContent>
 			<xsd:extension base="BaseElementConfig">
 				<xsd:sequence>
-					<xsd:element name="index" type="IndexConfig" maxOccurs="1"
-						minOccurs="1">
+					<xsd:element name="index" type="IndexConfig"
+						maxOccurs="1" minOccurs="1">
 					</xsd:element>
 				</xsd:sequence>
 			</xsd:extension>
@@ -94,33 +94,10 @@
 	</xsd:complexType>
 
 	<xsd:complexType name="IndexConfig">
-		<xsd:sequence>
-			<xsd:element name="parameter" maxOccurs="unbounded"
-				minOccurs="0">
-				<xsd:annotation>
-					<xsd:documentation>
-						One creation parameter of the index. Please see
-						the index documentation about the available
-						parameters.
-					</xsd:documentation>
-				</xsd:annotation>
-				<xsd:complexType>
-					<xsd:attribute name="key" type="xsd:string" use="required">
-					</xsd:attribute>
-					<xsd:attribute name="value" type="xsd:string" use="required">
-					</xsd:attribute>
-				</xsd:complexType>
-			</xsd:element>
-		</xsd:sequence>
-		<xsd:attribute name="type" use="required" type="xsd:string">
-			<xsd:annotation>
-				<xsd:documentation>
-					The type of the index. May be one of the
-					following:
-					trie
-				</xsd:documentation>
-			</xsd:annotation>
-		</xsd:attribute>
+		<xsd:complexContent>
+			<xsd:extension base="InstanceTypeConfig">
+			</xsd:extension>
+		</xsd:complexContent>
 	</xsd:complexType>
 
 	<xsd:complexType name="KeyPropertyConfig">
@@ -170,14 +147,41 @@
 		</xsd:complexContent>
 	</xsd:complexType>
 
-	<xsd:complexType name="ObjectStoreConfig">
+	<xsd:complexType name="ObjectStorageConfig">
 		<xsd:sequence>
-			<xsd:element name="class" type="ClassConfig" maxOccurs="unbounded"
-				minOccurs="1"></xsd:element>
-		</xsd:sequence>
+            <xsd:element name="store" maxOccurs="unbounded"
+            	minOccurs="1">
+            	<xsd:complexType>
+            		<xsd:sequence>
+            			<xsd:element name="class" type="ClassConfig"
+            				maxOccurs="1" minOccurs="1">
+            			</xsd:element>
+            			<xsd:element name="type"
+            				type="InstanceTypeConfig" maxOccurs="1" minOccurs="0">
+            			</xsd:element>
+            		</xsd:sequence>
+            		<xsd:attribute name="id" type="xsd:string"
+            			use="required">
+            		</xsd:attribute>
+            	</xsd:complexType>
+            </xsd:element>
+        </xsd:sequence>
 		<xsd:attribute name="package" type="xsd:string" use="optional">
 		</xsd:attribute>
 	</xsd:complexType>
 
 
+
+
+
+	<xsd:complexType name="InstanceTypeConfig">
+		<xsd:sequence>
+			<xsd:element name="parameter" type="Parameter" maxOccurs="unbounded" minOccurs="0"></xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="type" type="xsd:string" use="required"></xsd:attribute>
+	</xsd:complexType>
+	<xsd:complexType name="Parameter">
+		<xsd:attribute use="required" name="key" type="xsd:string"></xsd:attribute>
+		<xsd:attribute use="required" name="value" type="xsd:string"></xsd:attribute>
+	</xsd:complexType>
 </xsd:schema>

@@ -1,8 +1,10 @@
-package org.ogreg.ostore;
+package org.ogreg.ostore.file;
 
 import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
+
+import org.ogreg.ostore.ObjectStore;
 
 /**
  * Common interface for {@link ObjectStore} field accessors.

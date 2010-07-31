@@ -1,9 +1,11 @@
-package org.ogreg.ostore;
+package org.ogreg.ostore.file;
 
 import java.io.File;
 import java.io.Flushable;
 import java.util.Date;
 
+import org.ogreg.ostore.ObjectStore;
+import org.ogreg.ostore.ObjectStoreManager;
 import org.ogreg.test.FileTestSupport;
 import org.ogreg.test.TestUtils;
 import org.ogreg.test.TestUtils.Measurement;
@@ -16,7 +18,8 @@ import org.testng.annotations.Test;
  * @author Gergely Kiss
  */
 @Test(groups = "performance")
-public class ObjectStoreImplBenchmark {
+@SuppressWarnings("unchecked")
+public class FileObjectStoreImplBenchmark {
 	private ObjectStore<TestData> store;
 	private File dir;
 
@@ -24,11 +27,11 @@ public class ObjectStoreImplBenchmark {
 	 * Tests some random inserts in the object store.
 	 */
 	public void testInsert01() throws Exception {
-		Configuration config = new Configuration();
+		ObjectStoreManager config = new ObjectStoreManager();
 		config.add("configuration/test-ostore-performance.xml");
 
 		dir = FileTestSupport.createTempDir("perf");
-		store = config.createStore(TestData.class, dir);
+		store = config.createStore("test", dir);
 
 		Result r = TestUtils.measure(100000, new Measurement() {
 			@Override

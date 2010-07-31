@@ -1,4 +1,4 @@
-package org.ogreg.ostore;
+package org.ogreg.ostore.file;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -12,7 +12,7 @@ import org.ogreg.common.nio.NioUtils;
  * 
  * @author Gergely Kiss
  */
-class PropertyStore<T> extends BaseIndexedStore<T> {
+class FilePropertyStore<T> extends BaseIndexedStore<T> {
 	private static final byte[] MAGIC = new byte[] { 'P', 'R', 'O', 'P' };
 	private Class<T> type;
 

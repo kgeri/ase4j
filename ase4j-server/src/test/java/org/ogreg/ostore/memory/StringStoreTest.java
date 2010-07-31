@@ -1,8 +1,7 @@
-package org.ogreg.ostore;
+package org.ogreg.ostore.memory;
 
 import static org.testng.Assert.assertEquals;
 
-import org.ogreg.util.TrieDictionary;
 import org.testng.annotations.Test;
 
 /**
@@ -19,7 +18,8 @@ public class StringStoreTest {
 	 */
 	@Test
 	public void testCoverage01() throws Exception {
-		StringStore test = new StringStore(TrieDictionary.ENGLISH);
+		StringStore test = new StringStore();
+		test.init(String.class, null, null);
 
 		// For coverage
 		test.add(1, "aaa");

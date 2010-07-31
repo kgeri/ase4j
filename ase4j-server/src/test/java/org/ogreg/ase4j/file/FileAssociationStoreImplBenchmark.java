@@ -6,14 +6,12 @@ import java.util.List;
 
 import org.ogreg.ase4j.AssociationStoreException;
 import org.ogreg.ase4j.criteria.Expression;
-import org.ogreg.ase4j.criteria.Restrictions;
 import org.ogreg.ase4j.criteria.Query;
 import org.ogreg.ase4j.criteria.QueryExecutionException;
-import org.ogreg.ase4j.file.FileAssociationStoreImpl;
-import org.ogreg.ostore.StringStore;
+import org.ogreg.ase4j.criteria.Restrictions;
+import org.ogreg.ostore.memory.StringStore;
 import org.ogreg.test.FileTestSupport;
 import org.ogreg.test.TestUtils;
-import org.ogreg.util.TrieDictionary;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -31,7 +29,8 @@ public class FileAssociationStoreImplBenchmark {
 	@BeforeTest
 	public void before() {
 		File file = FileTestSupport.createTempFile("store");
-		StringStore ostore = new StringStore(TrieDictionary.ENGLISH);
+		StringStore ostore = new StringStore();
+		ostore.init(String.class, null, null);
 		store.setFromStore(ostore);
 		store.setToStore(ostore);
 		store.setStorageFile(file);

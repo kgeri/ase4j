@@ -1,7 +1,8 @@
-package org.ogreg.ostore;
+package org.ogreg.ostore.file;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+
 
 /**
  * Simple property field accessor.
@@ -10,9 +11,9 @@ import java.lang.reflect.Field;
  */
 class FieldPropertyAccessor implements FieldAccessor {
 	private final Field field;
-	private PropertyStore<Object> store;
+	private FilePropertyStore<Object> store;
 
-	public FieldPropertyAccessor(Field field, PropertyStore<Object> store) {
+	public FieldPropertyAccessor(Field field, FilePropertyStore<Object> store) {
 		this.field = field;
 		this.store = store;
 	}

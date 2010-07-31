@@ -5,7 +5,7 @@ package org.ogreg.common.utils;
  * 
  * @author Gergely Kiss
  */
-public abstract class PropertyPathUtils {
+public abstract class PropertyUtils {
 
 	/**
 	 * Converts the given property path to a single string (concatenates the

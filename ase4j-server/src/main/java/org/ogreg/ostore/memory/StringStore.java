@@ -1,10 +1,15 @@
-package org.ogreg.ostore;
+package org.ogreg.ostore.memory;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.ogreg.ostore.ConfigurableObjectStore;
+import org.ogreg.ostore.ObjectStore;
+import org.ogreg.ostore.ObjectStoreException;
+import org.ogreg.ostore.index.UniqueIndex;
 import org.ogreg.util.Trie;
 import org.ogreg.util.TrieDictionary;
 
@@ -13,7 +18,7 @@ import org.ogreg.util.TrieDictionary;
  * 
  * @author Gergely Kiss
  */
-public class StringStore implements ObjectStore<String>, Serializable {
+public class StringStore implements ConfigurableObjectStore<String>, Serializable {
 	private static final long serialVersionUID = -6176261432587230445L;
 
 	private AtomicInteger nextKey = new AtomicInteger(0);
@@ -27,8 +32,12 @@ public class StringStore implements ObjectStore<String>, Serializable {
 	/** The map to map Integers to Strings. */
 	private Map<Integer, byte[]> toString;
 
-	public StringStore(TrieDictionary dictionary) {
-		this.dictionary = dictionary;
+	@Override
+	public void init(Class<String> type, File storageDir, Map<String, String> params) {
+		// TODO type assert?
+		String dictName = params == null ? null : params.get("dictionary");
+
+		this.dictionary = TrieDictionary.createByName(dictName);
 		this.toInt = new Trie<Integer>(dictionary);
 		this.toString = new HashMap<Integer, byte[]>();
 	}
@@ -83,5 +92,20 @@ public class StringStore implements ObjectStore<String>, Serializable {
 		// TODO Field name check?
 		Integer key = toInt.get((String) value);
 		return key == null ? null : Long.valueOf(key.longValue());
+	}
+
+	@Override
+	public void initProperty(Class<?> type, String propertyName) {
+		// Do nothing
+	}
+
+	@Override
+	public void initIdProperty(Class<?> type, String propertyName, UniqueIndex index) {
+		// Do nothing
+	}
+
+	@Override
+	public void initExtension(Class<?> type, String propertyName) {
+		// Do nothing
 	}
 }

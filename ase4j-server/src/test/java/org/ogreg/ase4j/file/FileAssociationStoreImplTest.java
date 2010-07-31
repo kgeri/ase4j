@@ -16,14 +16,12 @@ import org.ogreg.ase4j.Association;
 import org.ogreg.ase4j.criteria.Query;
 import org.ogreg.ase4j.criteria.QueryExecutionException;
 import org.ogreg.ase4j.criteria.Restrictions;
-import org.ogreg.ase4j.file.FileAssociationStoreImpl;
 import org.ogreg.common.nio.NioUtils;
 import org.ogreg.common.utils.SerializationUtils;
-import org.ogreg.ostore.Configuration;
 import org.ogreg.ostore.ObjectStore;
-import org.ogreg.ostore.StringStore;
+import org.ogreg.ostore.ObjectStoreManager;
+import org.ogreg.ostore.memory.StringStore;
 import org.ogreg.test.FileTestSupport;
-import org.ogreg.util.TrieDictionary;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -41,15 +39,17 @@ public class FileAssociationStoreImplTest {
 	FileAssociationStoreImpl<String, TestData> objStore;
 
 	@BeforeMethod
+	@SuppressWarnings("unchecked")
 	public void setUp() throws Exception {
 		// Simple string based store
-		sstore = new StringStore(TrieDictionary.ENGLISH);
+		sstore = new StringStore();
+		sstore.init(String.class, null, null);
 
 		// Object based store
-		Configuration cfg = new Configuration();
+		ObjectStoreManager cfg = new ObjectStoreManager();
 		cfg.add("configuration/test-ostore.xml");
 
-		ostore = cfg.createStore(TestData.class, FileTestSupport.createTempDir("store"));
+		ostore = cfg.createStore("testAssocs", FileTestSupport.createTempDir("store"));
 	}
 
 	@AfterMethod

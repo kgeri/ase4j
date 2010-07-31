@@ -3,33 +3,38 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://ase4j.googlecode.com/schema ../../../main/resources/objectstore.xsd">
 
-	<!-- Object mapping for ObjectStoreImplTest -->
-	<class name="org.ogreg.ostore.ObjectStoreImplTest$TestData">
-		<id name="url">
-			<index type="trie">
-				<parameter key="dictionary" value="URL" />
-			</index>
-		</id>
+	<!-- Object mapping for FileObjectStoreImplTest -->
+	<store id="test">
+		<class name="org.ogreg.ostore.file.FileObjectStoreImplTest$TestData">
+			<id name="url">
+				<index type="trie">
+					<parameter key="dictionary" value="URL" />
+				</index>
+			</id>
 
-		<property name="id" />
-		<property name="added" />
-		
-		<extension name="extensions" />
-	</class>
-	
+			<property name="id" />
+			<property name="added" />
+
+			<extension name="extensions" />
+		</class>
+	</store>
+
 	<!-- Object mapping for error testing -->
-	<class name="java.lang.Object" />
-	
-	<!-- Object mapping for AssociationStoreImplTest -->
-	<class name="org.ogreg.ase4j.file.FileAssociationStoreImplTest$TestData">
-		<id name="url">
-			<index type="trie">
-				<parameter key="dictionary" value="URL" />
-			</index>
-		</id>
+	<store id="error">
+		<class name="java.lang.Object" />
+	</store>
 
-		<property name="created" />
-		<property name="length" />
-	</class>
-	
+	<!-- Object mapping for AssociationStoreImplTest -->
+	<store id="testAssocs">
+		<class name="org.ogreg.ase4j.file.FileAssociationStoreImplTest$TestData">
+			<id name="url">
+				<index type="trie">
+					<parameter key="dictionary" value="URL" />
+				</index>
+			</id>
+
+			<property name="created" />
+			<property name="length" />
+		</class>
+	</store>
 </objectstore>

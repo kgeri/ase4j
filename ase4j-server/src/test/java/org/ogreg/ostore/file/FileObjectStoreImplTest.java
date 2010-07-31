@@ -1,4 +1,4 @@
-package org.ogreg.ostore;
+package org.ogreg.ostore.file;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
@@ -12,6 +12,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.ogreg.common.nio.serializer.SerializerManager;
+import org.ogreg.ostore.ObjectStore;
+import org.ogreg.ostore.ObjectStoreException;
+import org.ogreg.ostore.ObjectStoreManager;
+import org.ogreg.ostore.file.FilePropertyStore;
 import org.ogreg.test.FileTestSupport;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -23,13 +27,14 @@ import org.testng.annotations.Test;
  * @author Gergely Kiss
  */
 @Test(groups = "correctness")
-public class ObjectStoreImplTest {
-	Configuration config;
+@SuppressWarnings("unchecked")
+public class FileObjectStoreImplTest {
+	ObjectStoreManager config;
 	ObjectStore<TestData> store;
 
 	@BeforeMethod
 	public void before() throws ObjectStoreException {
-		config = new Configuration();
+		config = new ObjectStoreManager();
 		config.add("configuration/test-ostore.xml");
 	}
 
@@ -46,7 +51,7 @@ public class ObjectStoreImplTest {
 	@Test
 	public void testAdd01() throws Exception {
 		File dir = FileTestSupport.createTempDir("ostore");
-		store = config.createStore(TestData.class, dir);
+		store = config.createStore("test", dir);
 
 		TestData d1 = data(1, "abc", new Date(3));
 		TestData d2 = data(2, "def", new Date(5));
@@ -72,7 +77,7 @@ public class ObjectStoreImplTest {
 
 		// Testing store reopen
 		((Flushable) store).flush();
-		store = config.createStore(TestData.class, dir);
+		store = config.createStore("test", dir);
 	}
 
 	/**
@@ -81,7 +86,7 @@ public class ObjectStoreImplTest {
 	 */
 	@Test
 	public void testPut01() throws Exception {
-		store = config.createStore(TestData.class, FileTestSupport.createTempDir("ostore"));
+		store = config.createStore("test", FileTestSupport.createTempDir("ostore"));
 
 		TestData d1 = data(1, "abc", new Date(3));
 		TestData d2 = data(2, "def", new Date(5));
@@ -115,7 +120,7 @@ public class ObjectStoreImplTest {
 	@Test
 	public void testPut02() throws Exception {
 		File dir = FileTestSupport.createTempDir("ostore");
-		store = config.createStore(TestData.class, dir);
+		store = config.createStore("test", dir);
 
 		TestData d1 = data(1, "abc", new Date(3));
 		d1.putExt("EXT1", "aaa");
@@ -137,7 +142,7 @@ public class ObjectStoreImplTest {
 		((Flushable) store).flush();
 		((Closeable) store).close();
 
-		store = config.createStore(TestData.class, dir);
+		store = config.createStore("test", dir);
 
 		assertEquals(store.get(1).getExt("EXT1"), "aaa");
 		assertEquals(store.get(1).getExt("EXT2"), new Date(0));
@@ -149,7 +154,7 @@ public class ObjectStoreImplTest {
 	@Test
 	public void testGetField01() throws Exception {
 		File dir = FileTestSupport.createTempDir("ostore");
-		store = config.createStore(TestData.class, dir);
+		store = config.createStore("test", dir);
 
 		TestData d1 = data(1, "abc", new Date(3));
 		d1.putExt("EXT1", "aaa");
@@ -167,7 +172,7 @@ public class ObjectStoreImplTest {
 	public void testCornerCases01() throws Exception {
 		// No business key (though needed for save)
 		try {
-			ObjectStore<Object> badStore = config.createStore(Object.class,
+			ObjectStore<Object> badStore = config.createStore("error",
 					FileTestSupport.createTempDir("ostore"));
 			badStore.save(new Object());
 			fail("Expected IllegalStateException");
@@ -191,7 +196,7 @@ public class ObjectStoreImplTest {
 
 		// Unconfigured type
 		try {
-			config.createStore(Date.class, FileTestSupport.createTempDir("ostore"));
+			config.createStore("missing", FileTestSupport.createTempDir("ostore"));
 			fail("Expected ObjectStoreException");
 		} catch (ObjectStoreException e) {
 		}
@@ -199,14 +204,14 @@ public class ObjectStoreImplTest {
 		// Incompatible PropertyStore
 		File file = FileTestSupport.createTempFile("incompatibleProp");
 
-		PropertyStore<String> ps1 = new PropertyStore<String>();
+		FilePropertyStore<String> ps1 = new FilePropertyStore<String>();
 		ps1.setType(String.class);
 		ps1.setSerializer(SerializerManager.findSerializerFor(String.class));
 		ps1.open(file);
 		ps1.flush();
 		ps1.close();
 
-		PropertyStore<Date> ps2 = new PropertyStore<Date>();
+		FilePropertyStore<Date> ps2 = new FilePropertyStore<Date>();
 		ps2.setType(Date.class);
 
 		try {

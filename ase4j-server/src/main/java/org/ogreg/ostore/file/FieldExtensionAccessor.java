@@ -1,4 +1,4 @@
-package org.ogreg.ostore;
+package org.ogreg.ostore.file;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,7 +9,8 @@ import java.util.Map.Entry;
 
 import org.ogreg.common.nio.NioSerializer;
 import org.ogreg.common.nio.serializer.SerializerManager;
-import org.ogreg.common.utils.PropertyPathUtils;
+import org.ogreg.common.utils.PropertyUtils;
+import org.ogreg.ostore.ObjectStoreManager;
 
 /**
  * Property field accessor for extended properties (maps).
@@ -40,7 +41,7 @@ class FieldExtensionAccessor implements FieldAccessor {
 			return ret;
 		} else {
 			// Object picking
-			String[] path = PropertyPathUtils.splitFirstPathElement(propertyPath);
+			String[] path = PropertyUtils.splitFirstPathElement(propertyPath);
 			FieldAccessor accessor = accessors.get(path[0]);
 
 			if (accessor == null) {
@@ -66,7 +67,7 @@ class FieldExtensionAccessor implements FieldAccessor {
 			}
 		} else {
 			// Object picking
-			String[] path = PropertyPathUtils.splitFirstPathElement(propertyPath);
+			String[] path = PropertyUtils.splitFirstPathElement(propertyPath);
 			ensureHasAccessor(path[0], value).store(identifier, path[1], value);
 		}
 	}
@@ -80,10 +81,10 @@ class FieldExtensionAccessor implements FieldAccessor {
 			Class<? extends Object> etype = value.getClass();
 			NioSerializer<?> s = SerializerManager.findSerializerFor(etype);
 
-			PropertyStore pstore = new PropertyStore();
+			FilePropertyStore pstore = new FilePropertyStore();
 			pstore.setType(etype);
 			pstore.setSerializer(s);
-			pstore.open(ObjectStoreImpl.getPropertyFile(storageDir, getFieldName(), name));
+			pstore.open(ObjectStoreManager.getPropertyFile(storageDir, getFieldName(), name));
 
 			accessor = new ValueAccessor(name, pstore);
 			addField(accessor);
@@ -129,9 +130,9 @@ class FieldExtensionAccessor implements FieldAccessor {
 	// Map value accessor
 	static class ValueAccessor implements FieldAccessor {
 		private final String name;
-		private final PropertyStore<Object> store;
+		private final FilePropertyStore<Object> store;
 
-		public ValueAccessor(String name, PropertyStore<Object> pstore) {
+		public ValueAccessor(String name, FilePropertyStore<Object> pstore) {
 			this.name = name;
 			this.store = pstore;
 		}
