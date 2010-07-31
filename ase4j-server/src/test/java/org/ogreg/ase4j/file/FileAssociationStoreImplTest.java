@@ -37,8 +37,8 @@ import org.testng.annotations.Test;
 public class FileAssociationStoreImplTest {
 	StringStore sstore;
 	ObjectStore<TestData> ostore;
-	FileAssociationStoreImpl<String> simpleStore;
-	FileAssociationStoreImpl<TestData> objStore;
+	FileAssociationStoreImpl<String, String> simpleStore;
+	FileAssociationStoreImpl<String, TestData> objStore;
 
 	@BeforeMethod
 	public void setUp() throws Exception {
@@ -63,7 +63,7 @@ public class FileAssociationStoreImplTest {
 	 */
 	public void testLoad01() {
 		File tf = FileTestSupport.createTempFile("assocs.idx");
-		simpleStore = new FileAssociationStoreImpl<String>();
+		simpleStore = new FileAssociationStoreImpl<String, String>();
 		simpleStore.setFromStore(sstore);
 		simpleStore.setToStore(sstore);
 		simpleStore.setStorageFile(tf);
@@ -80,7 +80,7 @@ public class FileAssociationStoreImplTest {
 		File tf = FileTestSupport.createTempFile("assocs.idx");
 		File indexFile = FileTestSupport.createTempFile("index.idx");
 
-		simpleStore = new FileAssociationStoreImpl<String>();
+		simpleStore = new FileAssociationStoreImpl<String, String>();
 		simpleStore.setFromStore(sstore);
 		simpleStore.setToStore(sstore);
 		simpleStore.setStorageFile(tf);
@@ -119,7 +119,7 @@ public class FileAssociationStoreImplTest {
 	public void testInsert02() throws Exception {
 		File tf = FileTestSupport.createTempFile("assocs.idx");
 
-		simpleStore = new FileAssociationStoreImpl<String>();
+		simpleStore = new FileAssociationStoreImpl<String, String>();
 		simpleStore.setFromStore(sstore);
 		simpleStore.setToStore(sstore);
 		simpleStore.setStorageFile(tf);
@@ -158,7 +158,7 @@ public class FileAssociationStoreImplTest {
 	public void testQuery01() throws Exception {
 		File tf = FileTestSupport.createTempFile("assocs.idx");
 
-		simpleStore = new FileAssociationStoreImpl<String>();
+		simpleStore = new FileAssociationStoreImpl<String, String>();
 		simpleStore.setFromStore(sstore);
 		simpleStore.setToStore(sstore);
 		simpleStore.setStorageFile(tf);
@@ -213,7 +213,7 @@ public class FileAssociationStoreImplTest {
 	public void testQuery02() throws Exception {
 		File tf = FileTestSupport.createTempFile("assocs.idx");
 
-		objStore = new FileAssociationStoreImpl<TestData>();
+		objStore = new FileAssociationStoreImpl<String, TestData>();
 		objStore.setFromStore(sstore);
 		objStore.setToStore(ostore);
 		objStore.setStorageFile(tf);
@@ -285,7 +285,7 @@ public class FileAssociationStoreImplTest {
 	public void testInvalidQuery01() throws Exception {
 		File tf = FileTestSupport.createTempFile("assocs.idx");
 
-		simpleStore = new FileAssociationStoreImpl<String>();
+		simpleStore = new FileAssociationStoreImpl<String, String>();
 		simpleStore.setFromStore(sstore);
 		simpleStore.setToStore(sstore);
 		simpleStore.setStorageFile(tf);
@@ -323,7 +323,7 @@ public class FileAssociationStoreImplTest {
 		try {
 
 			// From store must be set
-			simpleStore = new FileAssociationStoreImpl<String>();
+			simpleStore = new FileAssociationStoreImpl<String, String>();
 			simpleStore.init();
 			fail("Expected AssertionError");
 		} catch (AssertionError e) {
@@ -332,7 +332,7 @@ public class FileAssociationStoreImplTest {
 		try {
 
 			// To store must be set
-			simpleStore = new FileAssociationStoreImpl<String>();
+			simpleStore = new FileAssociationStoreImpl<String, String>();
 			simpleStore.setFromStore(sstore);
 			simpleStore.init();
 			fail("Expected AssertionError");
@@ -340,7 +340,7 @@ public class FileAssociationStoreImplTest {
 		}
 
 		// For coverage
-		simpleStore = new FileAssociationStoreImpl<String>();
+		simpleStore = new FileAssociationStoreImpl<String, String>();
 		simpleStore.getFromStore();
 		simpleStore.getToStore();
 		simpleStore.getStorageFile();

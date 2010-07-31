@@ -4,7 +4,7 @@ import static org.testng.Assert.assertEquals;
 
 import org.ogreg.ase4j.file.AssociationResultBlock;
 import org.ogreg.ase4j.file.AssociationBlock;
-import org.ogreg.ase4j.file.AssociationSolver;
+import org.ogreg.ase4j.file.FileAssociationSolver;
 import org.testng.annotations.Test;
 
 /**
@@ -13,8 +13,8 @@ import org.testng.annotations.Test;
  * @author Gergely Kiss
  */
 @Test(groups = "correctness")
-public class AssociationSolverTest {
-	AssociationSolver solver = new AssociationSolver(null);
+public class FileAssociationSolverTest {
+	FileAssociationSolver solver = new FileAssociationSolver(null);
 
     /**
 	 * Tests {@link AssociationBlock} intersection calculations.

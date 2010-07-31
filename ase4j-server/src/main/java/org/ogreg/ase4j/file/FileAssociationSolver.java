@@ -19,10 +19,10 @@ import org.ogreg.util.IntSelector;
  * 
  * @author Gergely Kiss
  */
-class AssociationSolver extends QuerySolver<AssociationResultBlock> {
-	private final FileAssociationStoreImpl<?> store;
+class FileAssociationSolver extends QuerySolver<AssociationResultBlock> {
+	private final FileAssociationStoreImpl<?, ?> store;
 
-	public AssociationSolver(FileAssociationStoreImpl<?> store) {
+	public FileAssociationSolver(FileAssociationStoreImpl<?, ?> store) {
 		this.store = store;
 	}
 
@@ -51,7 +51,8 @@ class AssociationSolver extends QuerySolver<AssociationResultBlock> {
 	}
 
 	@Override
-	protected AssociationResultBlock intersection(AssociationResultBlock valueA, AssociationResultBlock valueB) {
+	protected AssociationResultBlock intersection(AssociationResultBlock valueA,
+			AssociationResultBlock valueB) {
 		int[] ta = valueA.tos;
 		int[] tb = valueB.tos;
 
@@ -87,7 +88,8 @@ class AssociationSolver extends QuerySolver<AssociationResultBlock> {
 	}
 
 	@Override
-	protected AssociationResultBlock minus(AssociationResultBlock valueA, AssociationResultBlock valueB) {
+	protected AssociationResultBlock minus(AssociationResultBlock valueA,
+			AssociationResultBlock valueB) {
 		int[] ta = valueA.tos;
 		int[] tb = valueB.tos;
 
@@ -128,7 +130,8 @@ class AssociationSolver extends QuerySolver<AssociationResultBlock> {
 	}
 
 	@Override
-	protected AssociationResultBlock union(AssociationResultBlock valueA, AssociationResultBlock valueB) {
+	protected AssociationResultBlock union(AssociationResultBlock valueA,
+			AssociationResultBlock valueB) {
 		int[] ta = valueA.tos;
 		int[] tb = valueB.tos;
 
@@ -180,8 +183,8 @@ class AssociationSolver extends QuerySolver<AssociationResultBlock> {
 	}
 
 	@Override
-	protected AssociationResultBlock filter(AssociationResultBlock results, List<Comparison> comparisons)
-			throws QueryExecutionException {
+	protected AssociationResultBlock filter(AssociationResultBlock results,
+			List<Comparison> comparisons) throws QueryExecutionException {
 
 		try {
 			AssociationResultBlock filtered = new AssociationResultBlock(results.size);

@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 public class Search {
 	private static final Logger log = LoggerFactory.getLogger(Search.class);
 
-	FileAssociationStoreImpl<Document> store = new FileAssociationStoreImpl<Document>();
+	FileAssociationStoreImpl<String, Document> store = new FileAssociationStoreImpl<String, Document>();
 
 	private void start() throws IOException, ObjectStoreException {
 		String query = System.getProperty("query");

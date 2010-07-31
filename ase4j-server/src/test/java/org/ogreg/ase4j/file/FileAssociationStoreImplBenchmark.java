@@ -25,7 +25,7 @@ import org.testng.annotations.Test;
  */
 @Test(groups = "performance")
 public class FileAssociationStoreImplBenchmark {
-	FileAssociationStoreImpl<String> store = new FileAssociationStoreImpl<String>();
+	FileAssociationStoreImpl<String, String> store = new FileAssociationStoreImpl<String, String>();
 	private List<String> words;
 
 	@BeforeTest

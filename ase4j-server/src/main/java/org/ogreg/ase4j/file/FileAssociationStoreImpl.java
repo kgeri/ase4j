@@ -26,13 +26,15 @@ import org.ogreg.ostore.ObjectStoreException;
 /**
  * A file-based implementation of the association store.
  * 
+ * @param <F> The association 'from' type
+ * @param <T> The association 'to' type
  * @author Gergely Kiss
  */
-public class FileAssociationStoreImpl<T> implements AssociationStore<String, T>, Closeable, Flushable {
+public class FileAssociationStoreImpl<F, T> implements AssociationStore<F, T>, Closeable, Flushable {
 	public static final float VALUE_MUL = 1000;
 
 	/** The index of the from entities. */
-	private ObjectStore<String> fromStore;
+	private ObjectStore<F> fromStore;
 
 	/** The object store of the to entities. */
 	private ObjectStore<T> toStore;
@@ -41,7 +43,7 @@ public class FileAssociationStoreImpl<T> implements AssociationStore<String, T>,
 	private File storageFile;
 
 	private CachedBlockStore assocs = new CachedBlockStore();
-	private AssociationSolver solver = new AssociationSolver(this);
+	private FileAssociationSolver solver = new FileAssociationSolver(this);
 
 	/**
 	 * Initializes the storage using the given parameters.
@@ -68,7 +70,7 @@ public class FileAssociationStoreImpl<T> implements AssociationStore<String, T>,
 	}
 
 	@Override
-	public void add(String from, T to, float value) throws AssociationStoreException {
+	public void add(F from, T to, float value) throws AssociationStoreException {
 		try {
 			Long fi = fromStore.save(from);
 			Long ti = toStore.save(to);
@@ -85,13 +87,12 @@ public class FileAssociationStoreImpl<T> implements AssociationStore<String, T>,
 	}
 
 	@Override
-	public void addAll(Collection<Association<String, T>> froms, T to)
-			throws AssociationStoreException {
+	public void addAll(Collection<Association<F, T>> froms, T to) throws AssociationStoreException {
 		try {
 			Long ti = toStore.save(to);
 
-			for (Association<String, ?> assoc : froms) {
-				String from = assoc.from;
+			for (Association<F, ?> assoc : froms) {
+				F from = assoc.from;
 				Long fi = fromStore.save(from);
 
 				int v = (int) (assoc.value * VALUE_MUL);
@@ -109,15 +110,15 @@ public class FileAssociationStoreImpl<T> implements AssociationStore<String, T>,
 	}
 
 	@Override
-	public void addAll(Collection<Association<String, T>> assocs) throws AssociationStoreException {
-		Map<String, List<Association<String, T>>> byFrom = new HashMap<String, List<Association<String, T>>>(
+	public void addAll(Collection<Association<F, T>> assocs) throws AssociationStoreException {
+		Map<F, List<Association<F, T>>> byFrom = new HashMap<F, List<Association<F, T>>>(
 				assocs.size() / 2);
 
-		for (Association<String, T> a : assocs) {
-			List<Association<String, T>> l = byFrom.get(a.from);
+		for (Association<F, T> a : assocs) {
+			List<Association<F, T>> l = byFrom.get(a.from);
 
 			if (l == null) {
-				l = new LinkedList<Association<String, T>>();
+				l = new LinkedList<Association<F, T>>();
 				byFrom.put(a.from, l);
 			}
 
@@ -126,13 +127,13 @@ public class FileAssociationStoreImpl<T> implements AssociationStore<String, T>,
 
 		try {
 
-			for (Entry<String, List<Association<String, T>>> e : byFrom.entrySet()) {
-				String from = e.getKey();
+			for (Entry<F, List<Association<F, T>>> e : byFrom.entrySet()) {
+				F from = e.getKey();
 				Long fi = fromStore.save(from);
 
 				AssociationBlock a = new AssociationBlock(fi.intValue());
 
-				for (Association<String, T> assoc : e.getValue()) {
+				for (Association<F, T> assoc : e.getValue()) {
 					int v = (int) (assoc.value * VALUE_MUL);
 					Long ti = toStore.save(assoc.to);
 
@@ -150,8 +151,8 @@ public class FileAssociationStoreImpl<T> implements AssociationStore<String, T>,
 	}
 
 	@Override
-	public List<Association<String, T>> query(Query query) throws QueryExecutionException {
-		List<Association<String, T>> ret = new ArrayList<Association<String, T>>(query.limit());
+	public List<Association<F, T>> query(Query query) throws QueryExecutionException {
+		List<Association<F, T>> ret = new ArrayList<Association<F, T>>(query.limit());
 
 		// Solving the query
 		AssociationResultBlock results = solver.solve(query);
@@ -164,7 +165,7 @@ public class FileAssociationStoreImpl<T> implements AssociationStore<String, T>,
 				T to = toStore.get(tos[i]);
 				float value = (float) values[i] / VALUE_MUL;
 
-				ret.add(new Association<String, T>(null, to, value));
+				ret.add(new Association<F, T>(null, to, value));
 			}
 		} catch (ObjectStoreException e) {
 			throw new QueryExecutionException(e);
@@ -193,12 +194,12 @@ public class FileAssociationStoreImpl<T> implements AssociationStore<String, T>,
 		close();
 	}
 
-	public ObjectStore<String> getFromStore() {
+	public ObjectStore<F> getFromStore() {
 		return fromStore;
 	}
 
-	public void setFromStore(ObjectStore<String> fromIndex) {
-		this.fromStore = fromIndex;
+	public void setFromStore(ObjectStore<F> fromStore) {
+		this.fromStore = fromStore;
 	}
 
 	public ObjectStore<T> getToStore() {

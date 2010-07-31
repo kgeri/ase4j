@@ -43,7 +43,7 @@ import org.xml.sax.SAXException;
 public class WebIndexer {
 	private static final Logger log = LoggerFactory.getLogger(WebIndexer.class);
 
-	FileAssociationStoreImpl<Document> store = new FileAssociationStoreImpl<Document>();
+	FileAssociationStoreImpl<String, Document> store = new FileAssociationStoreImpl<String, Document>();
 	DefaultHttpClient client;
 
 	Stack<Page> stack = new Stack<Page>();
