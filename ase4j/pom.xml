@@ -47,6 +47,7 @@
 
 	<!-- ASE4j modules -->
 	<modules>
+		<module>../ase4j-client</module>
 		<module>../ase4j-server</module>
 		<module>../ase4j-examples</module>
 	</modules>

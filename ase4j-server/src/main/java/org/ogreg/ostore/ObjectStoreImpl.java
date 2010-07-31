@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 
 import org.ogreg.common.utils.PropertyPathUtils;
 import org.ogreg.common.utils.SerializationUtils;
+import org.ogreg.ostore.index.UniqueIndex;
 
 /**
  * A generic, file-based implementation of the {@link ObjectStore} interface.
@@ -144,7 +145,7 @@ class ObjectStoreImpl<T> implements ObjectStore<T>, Closeable, Flushable {
 					idx.setKey(value, identifier);
 				}
 
-				accessor.update(identifier, null, value);
+				accessor.store(identifier, null, value);
 			}
 		} catch (IllegalArgumentException e) {
 			throw new ObjectStoreException(e);
@@ -161,7 +162,7 @@ class ObjectStoreImpl<T> implements ObjectStore<T>, Closeable, Flushable {
 			T result = storedCtor.newInstance();
 
 			for (FieldAccessor accessor : accessors.values()) {
-				Object value = accessor.get(identifier, null);
+				Object value = accessor.load(identifier, null);
 				accessor.setTo(result, value);
 			}
 
@@ -182,7 +183,7 @@ class ObjectStoreImpl<T> implements ObjectStore<T>, Closeable, Flushable {
 		}
 
 		try {
-			return accessor.get(identifier, pathElements[1]);
+			return accessor.load(identifier, pathElements[1]);
 		} catch (IOException e) {
 			throw new ObjectStoreException(e);
 		}

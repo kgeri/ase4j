@@ -6,7 +6,6 @@ import java.io.Serializable;
 import java.util.Map;
 
 import org.ogreg.common.utils.SerializationUtils;
-import org.ogreg.ostore.UniqueIndex;
 import org.ogreg.util.Trie;
 import org.ogreg.util.TrieDictionary;
 

@@ -70,6 +70,13 @@
 	</reporting>
 
 	<dependencies>
+		<!-- ASE4j client interfaces -->
+		<dependency>
+			<groupId>com.ogreg</groupId>
+			<artifactId>ase4j-client</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+	
 		<!-- Test dependencies -->
 		<dependency>
 			<groupId>commons-io</groupId>

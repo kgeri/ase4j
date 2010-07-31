@@ -4,7 +4,7 @@
 	<groupId>com.ogreg</groupId>
 	<artifactId>ase4j-examples</artifactId>
 
-	<name>ASE4j examples</name>
+	<name>ASE4j Examples</name>
 	<description>Associative Storage Engine For Java examples</description>
 	
 	<parent>
@@ -15,8 +15,7 @@
 	</parent>
 
 	<dependencies>
-		<!-- ASE4j -->
-		<!-- TODO: ase4j-client -->
+		<!-- TODO: ASE4j client-->
 		<dependency>
 			<groupId>com.ogreg</groupId>
 			<artifactId>ase4j-server</artifactId>

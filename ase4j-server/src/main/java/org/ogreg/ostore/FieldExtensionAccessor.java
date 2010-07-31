@@ -27,13 +27,13 @@ class FieldExtensionAccessor implements FieldAccessor {
 	}
 
 	@Override
-	public Object get(long identifier, String propertyPath) throws IOException {
+	public Object load(long identifier, String propertyPath) throws IOException {
 		if (propertyPath == null) {
 			// Full map query
 			Map<String, Object> ret = new HashMap<String, Object>();
 
 			for (FieldAccessor accessor : accessors.values()) {
-				Object value = accessor.get(identifier, null);
+				Object value = accessor.load(identifier, null);
 				ret.put(accessor.getFieldName(), value);
 			}
 
@@ -47,13 +47,13 @@ class FieldExtensionAccessor implements FieldAccessor {
 				return null;
 			}
 
-			return accessor.get(identifier, path[1]);
+			return accessor.load(identifier, path[1]);
 		}
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void update(long identifier, String propertyPath, Object value) throws IOException {
+	public void store(long identifier, String propertyPath, Object value) throws IOException {
 		Map<String, Object> map = (Map<String, Object>) value;
 
 		if (propertyPath == null) {
@@ -62,12 +62,12 @@ class FieldExtensionAccessor implements FieldAccessor {
 				String ename = e.getKey();
 				Object evalue = e.getValue();
 
-				ensureHasAccessor(ename, evalue).update(identifier, null, evalue);
+				ensureHasAccessor(ename, evalue).store(identifier, null, evalue);
 			}
 		} else {
 			// Object picking
 			String[] path = PropertyPathUtils.splitFirstPathElement(propertyPath);
-			ensureHasAccessor(path[0], value).update(identifier, path[1], value);
+			ensureHasAccessor(path[0], value).store(identifier, path[1], value);
 		}
 	}
 
@@ -137,14 +137,14 @@ class FieldExtensionAccessor implements FieldAccessor {
 		}
 
 		@Override
-		public Object get(long identifier, String propertyPath) throws IOException {
+		public Object load(long identifier, String propertyPath) throws IOException {
 			// TODO long ids may be supported later...
 			// TODO Field name check
 			return store.get((int) identifier);
 		}
 
 		@Override
-		public void update(long identifier, String propertyPath, Object value) throws IOException {
+		public void store(long identifier, String propertyPath, Object value) throws IOException {
 			// TODO long ids may be supported later...
 			// TODO Field name check
 			store.update((int) identifier, value);

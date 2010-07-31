@@ -3,8 +3,6 @@ package org.ogreg.ostore;
 import java.io.Serializable;
 import java.util.Date;
 
-import org.ogreg.common.nio.NioSerializer;
-
 /**
  * Service interface for storing and retrieving Java objects.
  * <p>

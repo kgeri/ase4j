@@ -3,7 +3,7 @@ package org.ogreg.ostore;
 /**
  * Exception class signalling an error in object storage.
  * <p>
- * Received when the store has failed to load or save an object.
+ * Received when the store has failed to load or store an object.
  * </p>
  * 
  * @author Gergely Kiss

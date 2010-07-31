@@ -6,6 +6,12 @@ import java.io.IOException;
 
 /**
  * Common interface for {@link ObjectStore} field accessors.
+ * <p>
+ * Field accessors are used for maintaining the connection between the
+ * persistent and in-memory state of an object field. The accessor can load and
+ * store property values in an object storage, and also can get and set property
+ * values on a Java object instance.
+ * </p>
  * 
  * @author Gergely Kiss
  */
@@ -22,7 +28,7 @@ interface FieldAccessor extends Closeable, Flushable {
 	 * @return
 	 * @throws IOException on storage error
 	 */
-	Object get(long identifier, String propertyPath) throws IOException;
+	Object load(long identifier, String propertyPath) throws IOException;
 
 	/**
 	 * Updates the field value for the object with the given identifier in the
@@ -35,7 +41,7 @@ interface FieldAccessor extends Closeable, Flushable {
 	 * @param value The value to update to
 	 * @throws IOException on storage error
 	 */
-	void update(long identifier, String propertyPath, Object value) throws IOException;
+	void store(long identifier, String propertyPath, Object value) throws IOException;
 
 	/**
 	 * Returns the accessed field's name.

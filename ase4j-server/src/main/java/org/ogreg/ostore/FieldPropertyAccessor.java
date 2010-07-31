@@ -18,14 +18,14 @@ class FieldPropertyAccessor implements FieldAccessor {
 	}
 
 	@Override
-	public Object get(long identifier, String propertyPath) throws IOException {
+	public Object load(long identifier, String propertyPath) throws IOException {
 		// TODO long ids may be supported later...
 		// TODO Field name check
 		return store.get((int) identifier);
 	}
 
 	@Override
-	public void update(long identifier, String propertyPath, Object value) throws IOException {
+	public void store(long identifier, String propertyPath, Object value) throws IOException {
 		// TODO long ids may be supported later...
 		// TODO Field name check
 		store.update((int) identifier, value);

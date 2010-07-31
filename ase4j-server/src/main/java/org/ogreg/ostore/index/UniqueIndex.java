@@ -1,8 +1,10 @@
-package org.ogreg.ostore;
+package org.ogreg.ostore.index;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+
+import org.ogreg.ostore.ObjectStoreException;
 
 /**
  * Common interface for unique indices.

@@ -29,6 +29,7 @@ import org.ogreg.ostore.config.IndexConfig.Parameter;
 import org.ogreg.ostore.config.PropertyConfig;
 import org.ogreg.ostore.config.Storage;
 import org.ogreg.ostore.index.StringIndex;
+import org.ogreg.ostore.index.UniqueIndex;
 
 /**
  * Object store configuration bean.
