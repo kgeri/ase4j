@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<associationstore
+	xmlns="http://ase4j.googlecode.com/schema"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://ase4j.googlecode.com/schema ../../../main/resources/associationstore.xsd ">
+
+	<objectstore>
+		<class name="org.ogreg.ase4j.file.FileAssociationStoreImplTest$TestData">
+		<id name="url">
+			<index type="trie">
+				<parameter key="dictionary" value="URL" />
+			</index>
+		</id>
+
+		<property name="created" />
+		<property name="length" />
+	</class>
+	</objectstore>
+</associationstore>

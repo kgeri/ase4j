@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema elementFormDefault="qualified"
+	targetNamespace="http://ase4j.googlecode.com/schema"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns="http://ase4j.googlecode.com/schema"
+	xmlns:os="http://ase4j.googlecode.com/schema/objectstore.xsd">
+
+	<xsd:include schemaLocation="objectstore.xsd"></xsd:include>
+	<xsd:element name="associationstore">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="objectstore" type="ObjectStoreConfig"></xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+
+</xsd:schema>

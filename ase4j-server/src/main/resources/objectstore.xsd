@@ -1,22 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsd:schema targetNamespace="http://ase4j.googlecode.com/schema/objectstore.xsd"
-	elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-	xmlns="http://ase4j.googlecode.com/schema/objectstore.xsd">
+<xsd:schema targetNamespace="http://ase4j.googlecode.com/schema"
+	elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://ase4j.googlecode.com/schema">
 
-	<xsd:element name="storage">
+	<xsd:element name="objectstore">
 		<xsd:complexType>
-			<xsd:annotation>
-				<xsd:documentation></xsd:documentation>
-			</xsd:annotation>
-			<xsd:sequence maxOccurs="unbounded" minOccurs="1">
-				<xsd:element name="class" type="ClassConfig">
-					<xsd:annotation>
-						<xsd:documentation>The entity class to map for object storage.
-						</xsd:documentation>
-					</xsd:annotation>
-				</xsd:element>
-			</xsd:sequence>
-			<xsd:attribute name="package" type="xsd:string"></xsd:attribute>
+			<xsd:complexContent>
+				<xsd:extension base="ObjectStoreConfig"></xsd:extension>
+			</xsd:complexContent>
 		</xsd:complexType>
 	</xsd:element>
 
@@ -32,8 +22,8 @@
 						</xsd:documentation>
 					</xsd:annotation>
 				</xsd:element>
-				<xsd:element name="composite-id"
-					type="CompositeIdConfig" maxOccurs="1" minOccurs="1">
+				<xsd:element name="composite-id" type="CompositeIdConfig"
+					maxOccurs="1" minOccurs="1">
 					<xsd:annotation>
 						<xsd:documentation>
 							The composite business key of the class.
@@ -49,13 +39,19 @@
 					</xsd:documentation>
 				</xsd:annotation>
 			</xsd:element>
-			<xsd:element name="extension" type="ExtensionConfig" maxOccurs="unbounded" minOccurs="0"></xsd:element>
+			<xsd:element name="extension" type="ExtensionConfig"
+				maxOccurs="unbounded" minOccurs="0">
+			</xsd:element>
 		</xsd:sequence>
 		<xsd:attribute name="name" type="xsd:string" use="required">
 			<xsd:annotation>
-				<xsd:documentation>The fully qualified name of the mapped class, or
-					the simple name if the package attribute of the storage element was
-					specified.</xsd:documentation>
+				<xsd:documentation>
+					The fully qualified name of the mapped class, or
+					the
+					simple name if the package attribute of the storage
+					element was
+					specified.
+				</xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
 	</xsd:complexType>
@@ -65,7 +61,8 @@
 			<xsd:extension base="BasePropertyConfig">
 				<xsd:sequence>
 					<xsd:element name="index" type="IndexConfig" maxOccurs="1"
-						minOccurs="0"></xsd:element>
+						minOccurs="0">
+					</xsd:element>
 				</xsd:sequence>
 			</xsd:extension>
 		</xsd:complexContent>
@@ -75,7 +72,9 @@
 		<xsd:complexContent>
 			<xsd:extension base="BaseElementConfig">
 				<xsd:sequence>
-					<xsd:element name="index" type="IndexConfig" maxOccurs="1" minOccurs="1"></xsd:element>
+					<xsd:element name="index" type="IndexConfig" maxOccurs="1"
+						minOccurs="1">
+					</xsd:element>
 				</xsd:sequence>
 			</xsd:extension>
 		</xsd:complexContent>
@@ -86,7 +85,8 @@
 			<xsd:element name="key-property" type="KeyPropertyConfig"
 				maxOccurs="unbounded" minOccurs="1">
 				<xsd:annotation>
-					<xsd:documentation>One property of the composite business key.
+					<xsd:documentation>
+						One property of the composite business key.
 					</xsd:documentation>
 				</xsd:annotation>
 			</xsd:element>
@@ -98,8 +98,10 @@
 			<xsd:element name="parameter" maxOccurs="unbounded"
 				minOccurs="0">
 				<xsd:annotation>
-					<xsd:documentation>One creation parameter of the index. Please see
-						the index documentation about the available parameters.
+					<xsd:documentation>
+						One creation parameter of the index. Please see
+						the index documentation about the available
+						parameters.
 					</xsd:documentation>
 				</xsd:annotation>
 				<xsd:complexType>
@@ -112,8 +114,11 @@
 		</xsd:sequence>
 		<xsd:attribute name="type" use="required" type="xsd:string">
 			<xsd:annotation>
-				<xsd:documentation>The type of the index. May be one of the
-					following: trie</xsd:documentation>
+				<xsd:documentation>
+					The type of the index. May be one of the
+					following:
+					trie
+				</xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
 	</xsd:complexType>
@@ -123,7 +128,8 @@
 			<xsd:extension base="BasePropertyConfig">
 				<xsd:sequence>
 					<xsd:element name="index" type="IndexConfig" maxOccurs="1"
-						minOccurs="1"></xsd:element>
+						minOccurs="1">
+					</xsd:element>
 				</xsd:sequence>
 			</xsd:extension>
 		</xsd:complexContent>
@@ -133,12 +139,12 @@
 		<xsd:complexContent>
 			<xsd:extension base="BaseElementConfig">
 
-                <xsd:attribute name="type" type="xsd:string"
-					use="optional">
+				<xsd:attribute name="type" type="xsd:string" use="optional">
 					<xsd:annotation>
 						<xsd:documentation>
 							The type of the mapped class field, or empty
-							if it should be determined by reflection.
+							if
+							it should be determined by reflection.
 						</xsd:documentation>
 					</xsd:annotation>
 				</xsd:attribute>
@@ -149,18 +155,29 @@
 
 
 	<xsd:complexType name="BaseElementConfig">
-        <xsd:attribute name="name" type="xsd:string" use="required">
-					<xsd:annotation>
-						<xsd:documentation>
-							The name of the mapped class field.
-						</xsd:documentation>
-					</xsd:annotation>
-				</xsd:attribute>
-    </xsd:complexType>
+		<xsd:attribute name="name" type="xsd:string" use="required">
+			<xsd:annotation>
+				<xsd:documentation>
+					The name of the mapped class field.
+				</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
 
 	<xsd:complexType name="ExtensionConfig">
 		<xsd:complexContent>
 			<xsd:extension base="BaseElementConfig"></xsd:extension>
 		</xsd:complexContent>
 	</xsd:complexType>
+
+	<xsd:complexType name="ObjectStoreConfig">
+		<xsd:sequence>
+			<xsd:element name="class" type="ClassConfig" maxOccurs="unbounded"
+				minOccurs="1"></xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="package" type="xsd:string" use="optional">
+		</xsd:attribute>
+	</xsd:complexType>
+
+
 </xsd:schema>

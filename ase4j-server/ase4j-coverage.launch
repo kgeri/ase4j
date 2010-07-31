@@ -6,13 +6,13 @@
 </listAttribute>
 <stringAttribute key="org.eclipse.jdt.launching.CLASSPATH_PROVIDER" value="org.maven.ide.eclipse.launchconfig.classpathProvider"/>
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="org.testng.remote.RemoteTestNG"/>
-<stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="ase4j"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="ase4j-server"/>
 <stringAttribute key="org.eclipse.jdt.launching.SOURCE_PATH_PROVIDER" value="org.maven.ide.eclipse.launchconfig.sourcepathProvider"/>
 <mapAttribute key="org.testng.eclipse.ALL_CLASS_METHODS">
 <mapEntry key="org.ogreg.ase4j.AssociationUtilsTest" value=""/>
 <mapEntry key="org.ogreg.ase4j.file.AssociationBlockTest" value=""/>
-<mapEntry key="org.ogreg.ase4j.file.AssociationSolverTest" value=""/>
 <mapEntry key="org.ogreg.ase4j.file.CachedBlockStoreTest" value=""/>
+<mapEntry key="org.ogreg.ase4j.file.FileAssociationSolverTest" value=""/>
 <mapEntry key="org.ogreg.ase4j.file.FileAssociationStoreImplTest" value=""/>
 <mapEntry key="org.ogreg.common.nio.IndexEntriesTest" value=""/>
 <mapEntry key="org.ogreg.common.nio.NioUtilsTest" value=""/>
@@ -29,15 +29,15 @@
 </listAttribute>
 <listAttribute key="org.testng.eclipse.GROUP_LIST_CLASS">
 <listEntry value="org.ogreg.ase4j.AssociationUtilsTest"/>
-<listEntry value="org.ogreg.ostore.StringStoreTest"/>
 <listEntry value="org.ogreg.ase4j.file.AssociationBlockTest"/>
-<listEntry value="org.ogreg.ase4j.file.CachedBlockStoreTest"/>
+<listEntry value="org.ogreg.ostore.StringStoreTest"/>
+<listEntry value="org.ogreg.ase4j.file.FileAssociationSolverTest"/>
 <listEntry value="org.ogreg.util.TrieTest"/>
+<listEntry value="org.ogreg.ase4j.file.CachedBlockStoreTest"/>
 <listEntry value="org.ogreg.ostore.ObjectStoreImplTest"/>
 <listEntry value="org.ogreg.common.nio.NioUtilsTest"/>
 <listEntry value="org.ogreg.util.IntSelectorTest"/>
 <listEntry value="org.ogreg.ase4j.file.FileAssociationStoreImplTest"/>
-<listEntry value="org.ogreg.ase4j.file.AssociationSolverTest"/>
 <listEntry value="org.ogreg.common.nio.IndexEntriesTest"/>
 <listEntry value="org.ogreg.fh4j.FileHashTest"/>
 </listAttribute>

@@ -14,9 +14,13 @@
 		<relativePath>../ase4j</relativePath>
 	</parent>
 
+	<properties>
+		<jaxb.output>${project.build.directory}/generated-sources</jaxb.output>
+	</properties>
+
 	<build>
 		<plugins>
-			<!-- Object Store XSD generation -->
+			<!-- XSD generations -->
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>jaxb2-maven-plugin</artifactId>
@@ -29,8 +33,9 @@
 					</execution>
 				</executions>
 				<configuration>
+					<packageName>org.ogreg.config</packageName>
 					<schemaDirectory>src/main/resources</schemaDirectory>
-					<packageName>org.ogreg.ostore.config</packageName>
+					<schemaFiles>associationstore.xsd</schemaFiles>
 				</configuration>
 			</plugin>
 		</plugins>
@@ -76,7 +81,7 @@
 			<artifactId>ase4j-client</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-	
+
 		<!-- Test dependencies -->
 		<dependency>
 			<groupId>commons-io</groupId>

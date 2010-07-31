@@ -19,15 +19,15 @@ import javax.xml.bind.Unmarshaller;
 import org.ogreg.common.nio.NioSerializer;
 import org.ogreg.common.nio.NioUtils;
 import org.ogreg.common.nio.serializer.SerializerManager;
-import org.ogreg.ostore.config.BaseElementConfig;
-import org.ogreg.ostore.config.ClassConfig;
-import org.ogreg.ostore.config.CompositeIdConfig;
-import org.ogreg.ostore.config.ExtensionConfig;
-import org.ogreg.ostore.config.IdConfig;
-import org.ogreg.ostore.config.IndexConfig;
-import org.ogreg.ostore.config.IndexConfig.Parameter;
-import org.ogreg.ostore.config.PropertyConfig;
-import org.ogreg.ostore.config.Storage;
+import org.ogreg.config.BaseElementConfig;
+import org.ogreg.config.ClassConfig;
+import org.ogreg.config.CompositeIdConfig;
+import org.ogreg.config.ExtensionConfig;
+import org.ogreg.config.IdConfig;
+import org.ogreg.config.IndexConfig;
+import org.ogreg.config.IndexConfig.Parameter;
+import org.ogreg.config.Objectstore;
+import org.ogreg.config.PropertyConfig;
 import org.ogreg.ostore.index.StringIndex;
 import org.ogreg.ostore.index.UniqueIndex;
 
@@ -119,10 +119,10 @@ public class Configuration {
 	 */
 	public void add(InputStream configurationStream) throws ObjectStoreException {
 		try {
-			JAXBContext jc = JAXBContext.newInstance(Storage.class.getPackage().getName());
+			JAXBContext jc = JAXBContext.newInstance(Objectstore.class.getPackage().getName());
 			Unmarshaller um = jc.createUnmarshaller();
 
-			Storage storage = (Storage) um.unmarshal(configurationStream);
+			Objectstore storage = (Objectstore) um.unmarshal(configurationStream);
 
 			add(storage);
 		} catch (JAXBException e) {
@@ -130,7 +130,7 @@ public class Configuration {
 		}
 	}
 
-	private void add(Storage storage) throws ObjectStoreException {
+	private void add(Objectstore storage) throws ObjectStoreException {
 		String packageName = storage.getPackage();
 		if (packageName == null) {
 			packageName = "";
