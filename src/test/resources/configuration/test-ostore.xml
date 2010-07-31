@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<storage xmlns="http://ase4j.googlecode.com/schema/objectstore.xsd"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://ase4j.googlecode.com/schema/objectstore.xsd ../../../main/resources/objectstore.xsd">
+
+	<!-- Object mapping for ObjectStoreImplTest -->
+	<class name="org.ogreg.ostore.ObjectStoreImplTest$TestData">
+		<id name="url">
+			<index type="trie">
+				<parameter key="dictionary" value="URL" />
+			</index>
+		</id>
+
+		<property name="id" />
+		<property name="added" />
+		
+		<extension name="extensions" />
+	</class>
+	
+	<!-- Object mapping for error testing -->
+	<class name="java.lang.Object" />
+	
+	<!-- Object mapping for AssociationStoreImplTest -->
+	<class name="org.ogreg.ase4j.file.FileAssociationStoreImplTest$TestData">
+		<id name="url">
+			<index type="trie">
+				<parameter key="dictionary" value="URL" />
+			</index>
+		</id>
+
+		<property name="created" />
+		<property name="length" />
+	</class>
+	
+</storage>
