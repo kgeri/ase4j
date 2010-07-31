@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<storage xmlns:p="http://ase4j.googlecode.com/schema/objectstore.xsd"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://ase4j.googlecode.com/schema/objectstore.xsd objectstore.xsd ">
+	
+	<class name="examples.Document">
+		<id name="url">
+			<index type="trie" />
+		</id>
+	</class>
+</storage>

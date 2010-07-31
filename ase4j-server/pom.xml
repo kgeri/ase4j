@@ -2,11 +2,11 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.ogreg</groupId>
-	<artifactId>ase4j</artifactId>
+	<artifactId>ase4j-server</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<inceptionYear>2010</inceptionYear>
 
-	<name>ASE4j</name>
+	<name>ASE4j Server</name>
 	<description>Associative Storage Engine For Java</description>
 
 	<build>
