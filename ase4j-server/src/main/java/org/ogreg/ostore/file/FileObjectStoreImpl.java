@@ -3,7 +3,6 @@ package org.ogreg.ostore.file;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.Flushable;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -34,7 +33,7 @@ import org.ogreg.ostore.index.UniqueIndex;
  * 
  * @author Gergely Kiss
  */
-public class FileObjectStoreImpl<T> implements ConfigurableObjectStore<T>, Closeable, Flushable {
+public class FileObjectStoreImpl<T> implements ConfigurableObjectStore<T>, Closeable {
 
 	/** The entity's field accessors keyed by the field names. */
 	private final Map<String, FieldAccessor> accessors = new HashMap<String, FieldAccessor>();
@@ -223,6 +222,7 @@ public class FileObjectStoreImpl<T> implements ConfigurableObjectStore<T>, Close
 	 * 
 	 * @throws IOException
 	 */
+	@Override
 	public void flush() throws IOException {
 		SerializationUtils.write(ObjectStoreManager.getSequenceFile(storageDir), nextKey);
 

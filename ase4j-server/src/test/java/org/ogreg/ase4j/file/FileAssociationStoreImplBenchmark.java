@@ -2,6 +2,7 @@ package org.ogreg.ase4j.file;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 
 import org.ogreg.ase4j.AssociationStoreException;
@@ -30,7 +31,7 @@ public class FileAssociationStoreImplBenchmark {
 	public void before() {
 		File file = FileTestSupport.createTempFile("store");
 		StringStore ostore = new StringStore();
-		ostore.init(String.class, null, null);
+		ostore.init(String.class, null, new HashMap<String, String>());
 		store.setFromStore(ostore);
 		store.setToStore(ostore);
 		store.setStorageFile(file);

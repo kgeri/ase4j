@@ -1,5 +1,6 @@
 package org.ogreg.ostore;
 
+import java.io.Flushable;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -45,7 +46,7 @@ import java.util.Date;
  * @param <T> The type of the stored object. Must have a default constructor.
  * @author Gergely Kiss
  */
-public interface ObjectStore<T> {
+public interface ObjectStore<T> extends Flushable {
 
 	/**
 	 * Stores the given instance in the object store, or returns the stored

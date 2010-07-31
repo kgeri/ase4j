@@ -2,6 +2,8 @@ package org.ogreg.ostore.memory;
 
 import static org.testng.Assert.assertEquals;
 
+import java.util.HashMap;
+
 import org.testng.annotations.Test;
 
 /**
@@ -19,7 +21,7 @@ public class StringStoreTest {
 	@Test
 	public void testCoverage01() throws Exception {
 		StringStore test = new StringStore();
-		test.init(String.class, null, null);
+		test.init(String.class, null, new HashMap<String, String>());
 
 		// For coverage
 		test.add(1, "aaa");

@@ -101,7 +101,7 @@ public abstract class BaseJaxbManager<C> {
 	 * @param config
 	 * @throws ObjectStoreException
 	 */
-	protected abstract void add(C config) throws ConfigurationException;
+	public abstract void add(C config) throws ConfigurationException;
 
 	protected Class<?> forName(String className) throws ConfigurationException {
 		try {

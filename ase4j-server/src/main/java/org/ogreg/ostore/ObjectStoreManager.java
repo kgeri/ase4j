@@ -16,8 +16,8 @@ import org.ogreg.config.ExtensionConfig;
 import org.ogreg.config.IdConfig;
 import org.ogreg.config.IndexConfig;
 import org.ogreg.config.InstanceTypeConfig;
+import org.ogreg.config.ObjectStorageConfig;
 import org.ogreg.config.ObjectStorageConfig.Store;
-import org.ogreg.config.Objectstore;
 import org.ogreg.config.Parameter;
 import org.ogreg.config.PropertyConfig;
 import org.ogreg.ostore.file.FileObjectStoreImpl;
@@ -32,7 +32,7 @@ import org.ogreg.ostore.index.UniqueIndex;
  * 
  * @author Gergely Kiss
  */
-public class ObjectStoreManager extends BaseJaxbManager<Objectstore> {
+public class ObjectStoreManager extends BaseJaxbManager<ObjectStorageConfig> {
 	/** Supported index types. */
 	private static final Map<String, Class<? extends UniqueIndex>> SupportedIndices = new HashMap<String, Class<? extends UniqueIndex>>();
 
@@ -42,10 +42,10 @@ public class ObjectStoreManager extends BaseJaxbManager<Objectstore> {
 	}
 
 	/** The configurations for the different stores. */
-	protected final Map<String, Store> configuredStores = new HashMap<String, Store>();
+	private final Map<String, Store> configuredStores = new HashMap<String, Store>();
 
 	public ObjectStoreManager() {
-		super(Objectstore.class);
+		super(ObjectStorageConfig.class);
 	}
 
 	/**
@@ -57,10 +57,10 @@ public class ObjectStoreManager extends BaseJaxbManager<Objectstore> {
 	 * @param id The id of the storage
 	 * @param storageDir The storage directory to use
 	 * @return A newly initialized {@link ObjectStore}
-	 * @throws ObjectStoreException on storage init error
+	 * @throws ConfigurationException on storage init error
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public ObjectStore createStore(String id, File storageDir) throws ObjectStoreException {
+	public ObjectStore createStore(String id, File storageDir) throws ConfigurationException {
 
 		// Initializing the storage dir
 		storageDir.mkdirs();
@@ -131,15 +131,15 @@ public class ObjectStoreManager extends BaseJaxbManager<Objectstore> {
 	}
 
 	@Override
-	protected void add(Objectstore storage) throws ConfigurationException {
-		String packageName = storage.getPackage();
+	public void add(ObjectStorageConfig config) throws ConfigurationException {
+		String packageName = config.getPackage();
 		if (packageName == null) {
 			packageName = "";
 		} else {
 			packageName += ".";
 		}
 
-		for (Store store : storage.getStore()) {
+		for (Store store : config.getStore()) {
 			try {
 				// Pre-checking config
 				ClassConfig clazz = store.getClazz();
@@ -152,11 +152,11 @@ public class ObjectStoreManager extends BaseJaxbManager<Objectstore> {
 		}
 	}
 
-	protected Store getStorageConfigFor(String id) throws ObjectStoreException {
+	protected Store getStorageConfigFor(String id) throws ConfigurationException {
 		Store store = configuredStores.get(id);
 
 		if (store == null) {
-			throw new ObjectStoreException("No storage info found for identifier: " + id
+			throw new ConfigurationException("No object storage found for identifier: " + id
 					+ " Please check the configuration.");
 		}
 
@@ -169,11 +169,11 @@ public class ObjectStoreManager extends BaseJaxbManager<Objectstore> {
 	 * 
 	 * @param type
 	 * @return The index type
-	 * @throws ObjectStoreException If the type name is not supported and is not
-	 *             a valid class name.
+	 * @throws ConfigurationException If the type name is not supported and is
+	 *             not a valid class name.
 	 */
 	@SuppressWarnings("unchecked")
-	private Class<? extends UniqueIndex> getIndexType(String type) throws ObjectStoreException {
+	private Class<? extends UniqueIndex> getIndexType(String type) throws ConfigurationException {
 		Class<?> ret = SupportedIndices.get(type);
 
 		try {
@@ -182,18 +182,18 @@ public class ObjectStoreManager extends BaseJaxbManager<Objectstore> {
 			}
 
 			if (!UniqueIndex.class.isAssignableFrom(ret)) {
-				throw new ObjectStoreException("Index type " + ret.getName() + " should implement "
-						+ UniqueIndex.class.getName());
+				throw new ConfigurationException("Index type " + ret.getName()
+						+ " should implement " + UniqueIndex.class.getName());
 			}
 		} catch (ClassNotFoundException e) {
-			throw new ObjectStoreException(e);
+			throw new ConfigurationException(e);
 		}
 
 		return (Class<? extends UniqueIndex>) ret;
 	}
 
 	private UniqueIndex loadOrCreateUniqueIndex(File storageDir, String fieldName, IndexConfig type)
-			throws ObjectStoreException {
+			throws ConfigurationException {
 
 		try {
 			// TODO Rebuild index from property store if the file does not exist
@@ -209,11 +209,11 @@ public class ObjectStoreManager extends BaseJaxbManager<Objectstore> {
 
 			return index;
 		} catch (InstantiationException e) {
-			throw new ObjectStoreException(e);
+			throw new ConfigurationException(e);
 		} catch (IllegalAccessException e) {
-			throw new ObjectStoreException(e);
+			throw new ConfigurationException(e);
 		} catch (IOException e) {
-			throw new ObjectStoreException(e);
+			throw new ConfigurationException(e);
 		}
 	}
 

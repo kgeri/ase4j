@@ -11,6 +11,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.ogreg.common.ConfigurationException;
 import org.ogreg.common.nio.serializer.SerializerManager;
 import org.ogreg.ostore.ObjectStore;
 import org.ogreg.ostore.ObjectStoreException;
@@ -197,8 +198,8 @@ public class FileObjectStoreImplTest {
 		// Unconfigured type
 		try {
 			config.createStore("missing", FileTestSupport.createTempDir("ostore"));
-			fail("Expected ObjectStoreException");
-		} catch (ObjectStoreException e) {
+			fail("Expected ConfigurationException");
+		} catch (ConfigurationException e) {
 		}
 
 		// Incompatible PropertyStore

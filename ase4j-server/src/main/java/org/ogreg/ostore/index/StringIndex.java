@@ -20,9 +20,6 @@ public class StringIndex implements UniqueIndex, Serializable {
 	/** The {@link Trie} to map Strings to integers. */
 	private Trie<Integer> toInt;
 
-	/** The dictionary to use for storing strings. */
-	private TrieDictionary dictionary;
-
 	public StringIndex() {
 	}
 
@@ -42,10 +39,9 @@ public class StringIndex implements UniqueIndex, Serializable {
 		if (indexFile.exists()) {
 			StringIndex idx = SerializationUtils.read(indexFile, StringIndex.class);
 			this.toInt = idx.toInt;
-			this.dictionary = idx.dictionary;
 		} else {
 			String dictName = params.get("dictionary");
-			this.dictionary = TrieDictionary.createByName(dictName);
+			TrieDictionary dictionary = TrieDictionary.createByName(dictName);
 			this.toInt = new Trie<Integer>(dictionary);
 		}
 	}

@@ -52,7 +52,7 @@
 				<inherited>true</inherited>
 				<configuration>
 					<filters>
-						<filter>-org.ogreg.ostore.config.*</filter>
+						<filter>-org.ogreg.config.*</filter>
 					</filters>
 				</configuration>
 			</plugin>

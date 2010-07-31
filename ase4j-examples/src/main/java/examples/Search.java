@@ -5,16 +5,12 @@ import java.io.IOException;
 import java.util.List;
 
 import org.ogreg.ase4j.Association;
+import org.ogreg.ase4j.AssociationStore;
+import org.ogreg.ase4j.AssociationStoreManager;
 import org.ogreg.ase4j.criteria.Expression;
-import org.ogreg.ase4j.criteria.Restrictions;
 import org.ogreg.ase4j.criteria.Query;
 import org.ogreg.ase4j.criteria.QueryExecutionException;
-import org.ogreg.ase4j.file.FileAssociationStoreImpl;
-import org.ogreg.common.utils.SerializationUtils;
-import org.ogreg.ostore.ObjectStoreManager;
-import org.ogreg.ostore.ObjectStore;
-import org.ogreg.ostore.ObjectStoreException;
-import org.ogreg.ostore.memory.StringStore;
+import org.ogreg.ase4j.criteria.Restrictions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,37 +22,24 @@ import org.slf4j.LoggerFactory;
 public class Search {
 	private static final Logger log = LoggerFactory.getLogger(Search.class);
 
-	FileAssociationStoreImpl<String, Document> store = new FileAssociationStoreImpl<String, Document>();
-
-	private void start() throws IOException, ObjectStoreException {
+	private void start() throws IOException {
 		String query = System.getProperty("query");
 
 		if (query == null) {
 			throw new IllegalArgumentException("The system property -Dquery must be specified.");
 		}
 
-		String subjectPath = System.getProperty("subjectIndex");
-		String docPath = System.getProperty("urlIndex");
-		String assocsPath = System.getProperty("assocs");
+		String dataPath = System.getProperty("dataDir");
+		File dataDir = new File((dataPath == null) ? "target" : dataPath);
 
-		File subjectFile = new File((subjectPath == null) ? "target/subjects" : subjectPath);
-		File documentDir = new File((docPath == null) ? "target/urls" : docPath);
-		File assocsFile = new File((assocsPath == null) ? "target/webassocs" : assocsPath);
+		log.info("Initializing stores.");
 
-		log.info("Initializing index stores.");
-
-		ObjectStoreManager cfg = new ObjectStoreManager();
-		cfg.add("ostore.xml");
-
-		StringStore fromStore = SerializationUtils.read(subjectFile, StringStore.class);
+		AssociationStoreManager cfg = new AssociationStoreManager();
+		cfg.setDataDir(dataDir);
+		cfg.add("store.xml");
 
 		@SuppressWarnings("unchecked")
-		ObjectStore<Document> documentStore = cfg.createStore("index", documentDir);
-
-		store.setFromStore(fromStore);
-		store.setToStore(documentStore);
-		store.setStorageFile(assocsFile);
-		store.init();
+		AssociationStore<String, Document> store = cfg.createStore("index");
 
 		log.info("Stores initialized. Searching for: {}", query);
 		log.info("Results:");

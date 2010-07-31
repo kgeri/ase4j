@@ -16,8 +16,8 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.ogreg.ase4j.Association;
-import org.ogreg.ase4j.AssociationStore;
 import org.ogreg.ase4j.AssociationStoreException;
+import org.ogreg.ase4j.ConfigurableAssociationStore;
 import org.ogreg.ase4j.criteria.Query;
 import org.ogreg.ase4j.criteria.QueryExecutionException;
 import org.ogreg.ostore.ObjectStore;
@@ -30,7 +30,8 @@ import org.ogreg.ostore.ObjectStoreException;
  * @param <T> The association 'to' type
  * @author Gergely Kiss
  */
-public class FileAssociationStoreImpl<F, T> implements AssociationStore<F, T>, Closeable, Flushable {
+public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationStore<F, T>,
+		Closeable, Flushable {
 	public static final float VALUE_MUL = 1000;
 
 	/** The index of the from entities. */
@@ -45,6 +46,15 @@ public class FileAssociationStoreImpl<F, T> implements AssociationStore<F, T>, C
 	private CachedBlockStore assocs = new CachedBlockStore();
 	private FileAssociationSolver solver = new FileAssociationSolver(this);
 
+	@Override
+	public void init(ObjectStore<F> from, ObjectStore<T> to, File storageFile) {
+		setFromStore(from);
+		setToStore(to);
+		setStorageFile(storageFile);
+
+		init();
+	}
+
 	/**
 	 * Initializes the storage using the given parameters.
 	 * 
@@ -52,7 +62,6 @@ public class FileAssociationStoreImpl<F, T> implements AssociationStore<F, T>, C
 	 */
 	@PostConstruct
 	public void init() {
-
 		try {
 
 			if (fromStore == null) {

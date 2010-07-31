@@ -10,5 +10,5 @@
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="examples.WebIndexer"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="ase4j-examples"/>
 <stringAttribute key="org.eclipse.jdt.launching.SOURCE_PATH_PROVIDER" value="org.maven.ide.eclipse.launchconfig.sourcepathProvider"/>
-<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Durl=${string_prompt}"/>
+<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Dlogback.configurationFile=${workspace_loc:/ase4j-examples/src/main/resources/logback.xml}&#10;-Durl=${string_prompt}"/>
 </launchConfiguration>

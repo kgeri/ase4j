@@ -1,14 +1,18 @@
 package org.ogreg.ostore.memory;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.ogreg.common.ConfigurationException;
+import org.ogreg.common.utils.SerializationUtils;
 import org.ogreg.ostore.ConfigurableObjectStore;
 import org.ogreg.ostore.ObjectStore;
 import org.ogreg.ostore.ObjectStoreException;
+import org.ogreg.ostore.ObjectStoreManager;
 import org.ogreg.ostore.index.UniqueIndex;
 import org.ogreg.util.Trie;
 import org.ogreg.util.TrieDictionary;
@@ -21,7 +25,7 @@ import org.ogreg.util.TrieDictionary;
 public class StringStore implements ConfigurableObjectStore<String>, Serializable {
 	private static final long serialVersionUID = -6176261432587230445L;
 
-	private AtomicInteger nextKey = new AtomicInteger(0);
+	private AtomicInteger nextKey;
 
 	/** The dictionary to use for storing strings. */
 	private TrieDictionary dictionary;
@@ -32,14 +36,32 @@ public class StringStore implements ConfigurableObjectStore<String>, Serializabl
 	/** The map to map Integers to Strings. */
 	private Map<Integer, byte[]> toString;
 
+	/** The file which stores this instance. */
+	private transient File storageFile;
+
 	@Override
 	public void init(Class<String> type, File storageDir, Map<String, String> params) {
 		// TODO type assert?
-		String dictName = params == null ? null : params.get("dictionary");
 
-		this.dictionary = TrieDictionary.createByName(dictName);
-		this.toInt = new Trie<Integer>(dictionary);
-		this.toString = new HashMap<Integer, byte[]>();
+		storageFile = ObjectStoreManager.getPropertyFile(storageDir, "strings");
+
+		if (storageFile.exists()) {
+			try {
+				StringStore store = SerializationUtils.read(storageFile, StringStore.class);
+				this.dictionary = store.dictionary;
+				this.toInt = store.toInt;
+				this.toString = store.toString;
+				this.nextKey = store.nextKey;
+			} catch (IOException e) {
+				throw new ConfigurationException(e);
+			}
+		} else {
+			String dictName = params.get("dictionary");
+			this.dictionary = TrieDictionary.createByName(dictName);
+			this.toInt = new Trie<Integer>(dictionary);
+			this.toString = new HashMap<Integer, byte[]>();
+			this.nextKey = new AtomicInteger(0);
+		}
 	}
 
 	@Override
@@ -107,5 +129,10 @@ public class StringStore implements ConfigurableObjectStore<String>, Serializabl
 	@Override
 	public void initExtension(Class<?> type, String propertyName) {
 		// Do nothing
+	}
+
+	@Override
+	public void flush() throws IOException {
+		SerializationUtils.write(storageFile, this);
 	}
 }

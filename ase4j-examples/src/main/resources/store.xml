@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<associationstore xmlns="http://ase4j.googlecode.com/schema"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://ase4j.googlecode.com/schema ../../../../ase4j-server/src/main/resources/associationstore.xsd">
+
+	<objects>
+		<store id="documents">
+			<class name="examples.Document">
+				<id name="url">
+					<index type="trie" />
+				</id>
+			</class>
+		</store>
+		
+		<store id="urls">
+			<class name="java.lang.String" />
+			<type type="org.ogreg.ostore.memory.StringStore">
+				<parameter key="dictionary" value="url"/>
+			</type>
+		</store>
+	</objects>
+	
+	<associations>
+		<store fromStore="urls" toStore="documents" id="index" />
+	</associations>
+</associationstore>

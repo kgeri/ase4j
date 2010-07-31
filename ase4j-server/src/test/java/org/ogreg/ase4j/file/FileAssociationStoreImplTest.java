@@ -8,6 +8,7 @@ import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -43,7 +44,7 @@ public class FileAssociationStoreImplTest {
 	public void setUp() throws Exception {
 		// Simple string based store
 		sstore = new StringStore();
-		sstore.init(String.class, null, null);
+		sstore.init(String.class, null, new HashMap<String, String>());
 
 		// Object based store
 		ObjectStoreManager cfg = new ObjectStoreManager();

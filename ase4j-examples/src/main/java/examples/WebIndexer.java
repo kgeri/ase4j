@@ -1,8 +1,6 @@
 package examples;
 
-import java.io.Closeable;
 import java.io.File;
-import java.io.Flushable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
@@ -23,13 +21,11 @@ import org.apache.xerces.xni.XMLString;
 import org.apache.xerces.xni.XNIException;
 import org.cyberneko.html.HTMLConfiguration;
 import org.ogreg.ase4j.Association;
+import org.ogreg.ase4j.AssociationStore;
 import org.ogreg.ase4j.AssociationStoreException;
+import org.ogreg.ase4j.AssociationStoreManager;
 import org.ogreg.ase4j.file.FileAssociationStoreImpl;
-import org.ogreg.common.utils.SerializationUtils;
-import org.ogreg.ostore.ObjectStoreManager;
-import org.ogreg.ostore.ObjectStore;
 import org.ogreg.ostore.ObjectStoreException;
-import org.ogreg.ostore.memory.StringStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
@@ -42,13 +38,13 @@ import org.xml.sax.SAXException;
  */
 public class WebIndexer {
 	private static final Logger log = LoggerFactory.getLogger(WebIndexer.class);
-
-	FileAssociationStoreImpl<String, Document> store = new FileAssociationStoreImpl<String, Document>();
 	DefaultHttpClient client;
 
+	AssociationStore<String, Document> store;
 	Stack<Page> stack = new Stack<Page>();
 	int indexed = 0;
 
+	@SuppressWarnings("unchecked")
 	private void start() throws IOException, ObjectStoreException {
 		String url = System.getProperty("url");
 
@@ -56,31 +52,20 @@ public class WebIndexer {
 			throw new IllegalArgumentException("The system property -Durl must be specified");
 		}
 
-		String subjectPath = System.getProperty("subjectIndex");
-		String docPath = System.getProperty("urlIndex");
-		String assocsPath = System.getProperty("assocs");
 		int depth = Integer.getInteger("depth", 2);
 
-		File subjectFile = new File((subjectPath == null) ? "target/subjects" : subjectPath);
-		File documentDir = new File((docPath == null) ? "target/urls" : docPath);
-		File assocsFile = new File((assocsPath == null) ? "target/webassocs" : assocsPath);
+		String dataPath = System.getProperty("dataDir");
+		File dataDir = new File((dataPath == null) ? "target" : dataPath);
 
-		log.info("Initializing index stores.");
+		log.info("Initializing stores.");
 
-		ObjectStoreManager cfg = new ObjectStoreManager();
-		cfg.add("ostore.xml");
+		AssociationStoreManager cfg = new AssociationStoreManager();
+		cfg.setDataDir(dataDir);
+		cfg.add("store.xml");
 
-		StringStore fromStore = SerializationUtils.read(subjectFile, StringStore.class);
+		store = cfg.createStore("index");
 
-		@SuppressWarnings("unchecked")
-		ObjectStore<Document> documentStore = cfg.createStore("index", documentDir);
-
-		store.setFromStore(fromStore);
-		store.setToStore(documentStore);
-		store.setStorageFile(assocsFile);
-		store.init();
-
-		log.info("Stores initialized. Indexing: {} (depth={})", url, depth);
+		log.info("Stores initialized. Indexing: {}", url);
 
 		client = new DefaultHttpClient();
 		stack.push(new Page(url, 0));
@@ -102,11 +87,12 @@ public class WebIndexer {
 			}
 		}
 
-		SerializationUtils.write(subjectFile, fromStore);
-		((Flushable) documentStore).flush();
-		((Closeable) documentStore).close();
-		store.flush();
-		store.close();
+		// TODO Flush strategy
+		@SuppressWarnings("rawtypes")
+		FileAssociationStoreImpl s = (FileAssociationStoreImpl) store;
+		s.flush();
+		s.getFromStore().flush();
+		s.getToStore().flush();
 
 		log.info("Indexing finished. Indexed {} pages", indexed);
 	}
