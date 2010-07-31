@@ -8,8 +8,13 @@
 
 	<name>ASE4j</name>
 	<description>Associative Storage Engine For Java</description>
-	
+
 	<packaging>pom</packaging>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
 
 	<build>
 		<plugins>
@@ -39,7 +44,7 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-	
+
 	<!-- ASE4j modules -->
 	<modules>
 		<module>../ase4j-server</module>
