@@ -3,23 +3,19 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.ogreg</groupId>
 	<artifactId>ase4j-server</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<inceptionYear>2010</inceptionYear>
 
 	<name>ASE4j Server</name>
 	<description>Associative Storage Engine For Java</description>
 
+	<parent>
+		<groupId>com.ogreg</groupId>
+		<artifactId>ase4j</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+		<relativePath>../ase4j</relativePath>
+	</parent>
+
 	<build>
 		<plugins>
-			<!-- Source level -->
-			<plugin>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
-				</configuration>
-			</plugin>
-
 			<!-- Object Store XSD generation -->
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
@@ -74,20 +70,7 @@
 	</reporting>
 
 	<dependencies>
-		<!-- Logging -->
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>1.6.0</version>
-		</dependency>
-
 		<!-- Test dependencies -->
-		<dependency>
-			<groupId>org.testng</groupId>
-			<artifactId>testng</artifactId>
-			<version>5.12.1</version>
-			<scope>test</scope>
-		</dependency>
 		<dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>

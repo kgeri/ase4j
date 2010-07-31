@@ -3,30 +3,24 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.ogreg</groupId>
 	<artifactId>ase4j-examples</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<inceptionYear>2010</inceptionYear>
 
 	<name>ASE4j examples</name>
 	<description>Associative Storage Engine For Java examples</description>
-
-	<build>
-		<plugins>
-			<plugin>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
+	
+	<parent>
+		<groupId>com.ogreg</groupId>
+		<artifactId>ase4j</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+		<relativePath>../ase4j</relativePath>
+	</parent>
 
 	<dependencies>
 		<!-- ASE4j -->
+		<!-- TODO: ase4j-client -->
 		<dependency>
 			<groupId>com.ogreg</groupId>
 			<artifactId>ase4j-server</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>${project.version}</version>
 		</dependency>
 
 		<!-- HttpClient -->
@@ -52,11 +46,6 @@
 
 		<!-- Logging -->
 		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>1.6.0</version>
-		</dependency>
-		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
 			<version>0.9.21</version>
@@ -65,14 +54,6 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>jcl-over-slf4j</artifactId>
 			<version>1.6.0</version>
-		</dependency>
-
-		<!-- Test dependencies -->
-		<dependency>
-			<groupId>org.testng</groupId>
-			<artifactId>testng</artifactId>
-			<version>5.12.1</version>
-			<scope>test</scope>
 		</dependency>
 	</dependencies>
 </project>
