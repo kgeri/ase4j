@@ -12,7 +12,7 @@
 			</class>
 		</store>
 		
-		<store id="urls">
+		<store id="subjects">
 			<class name="java.lang.String" />
 			<type type="org.ogreg.ostore.memory.StringStore">
 				<parameter key="dictionary" value="url"/>
@@ -21,6 +21,6 @@
 	</objects>
 	
 	<associations>
-		<store fromStore="urls" toStore="documents" id="index" />
+		<store fromStore="subjects" toStore="documents" id="index" />
 	</associations>
 </associationstore>
