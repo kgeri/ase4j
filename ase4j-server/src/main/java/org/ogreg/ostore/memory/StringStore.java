@@ -40,7 +40,7 @@ public class StringStore implements ConfigurableObjectStore<String>, Serializabl
 	private transient File storageFile;
 
 	@Override
-	public void init(Class<String> type, File storageDir, Map<String, String> params) {
+	public synchronized void init(Class<String> type, File storageDir, Map<String, String> params) {
 		// TODO type assert?
 
 		storageFile = ObjectStoreManager.getPropertyFile(storageDir, "strings");
@@ -132,7 +132,7 @@ public class StringStore implements ConfigurableObjectStore<String>, Serializabl
 	}
 
 	@Override
-	public void flush() throws IOException {
+	public synchronized void flush() throws IOException {
 		SerializationUtils.write(storageFile, this);
 	}
 }

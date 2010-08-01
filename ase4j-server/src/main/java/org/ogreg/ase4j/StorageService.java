@@ -117,7 +117,7 @@ public class StorageService {
 			public void run() {
 				try {
 					System.out.println("Enter 'q' or Ctrl+C to quit");
-					while (true) {
+					while (running) {
 						int b = System.in.read();
 						if (b < 0 || b == 'q') {
 							shutdown();
@@ -163,6 +163,10 @@ public class StorageService {
 		// TODO PerformanceTimer
 		long time = System.currentTimeMillis() - before;
 		log.info("Shutdown completed in {} ms. Bye!", time);
+
+		// Shutting down RMI
+		Remote.shutdown();
+
 		running = false;
 	}
 
