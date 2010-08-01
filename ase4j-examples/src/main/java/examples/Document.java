@@ -1,11 +1,15 @@
 package examples;
 
+import java.io.Serializable;
+
 /**
  * An indexed, searchable document on the web.
  * 
  * @author Gergely Kiss
  */
-public class Document {
+public class Document implements Serializable {
+	private static final long serialVersionUID = 373621781468138198L;
+
 	private String url;
 
 	Document() {

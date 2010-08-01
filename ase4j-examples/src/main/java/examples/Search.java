@@ -1,12 +1,10 @@
 package examples;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.List;
 
 import org.ogreg.ase4j.Association;
 import org.ogreg.ase4j.AssociationStore;
-import org.ogreg.ase4j.AssociationStoreManager;
+import org.ogreg.ase4j.StorageClient;
 import org.ogreg.ase4j.criteria.Expression;
 import org.ogreg.ase4j.criteria.Query;
 import org.ogreg.ase4j.criteria.QueryExecutionException;
@@ -22,26 +20,19 @@ import org.slf4j.LoggerFactory;
 public class Search {
 	private static final Logger log = LoggerFactory.getLogger(Search.class);
 
-	private void start() throws IOException {
+	private void start() throws Exception {
 		String query = System.getProperty("query");
 
 		if (query == null) {
 			throw new IllegalArgumentException("The system property -Dquery must be specified.");
 		}
 
-		String dataPath = System.getProperty("dataDir");
-		File dataDir = new File((dataPath == null) ? "target" : dataPath);
+		log.info("Looking up store...");
 
-		log.info("Initializing stores.");
+		AssociationStore<String, Document> store = StorageClient.lookup("//localhost:1198/assocs/index",
+				String.class, Document.class);
 
-		AssociationStoreManager cfg = new AssociationStoreManager();
-		cfg.setDataDir(dataDir);
-		cfg.add("store.xml");
-
-		@SuppressWarnings("unchecked")
-		AssociationStore<String, Document> store = cfg.createStore("index");
-
-		log.info("Stores initialized. Searching for: {}", query);
+		log.info("Store found. Searching for: {}", query);
 		log.info("Results:");
 
 		String[] queries = query.split("[\\s]+");

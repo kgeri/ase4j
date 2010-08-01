@@ -3,6 +3,7 @@ package org.ogreg.ase4j;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.ogreg.ase4j.file.FileAssociationStoreImpl;
 import org.ogreg.common.BaseJaxbManager;
@@ -25,7 +26,7 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
 	private final Map<String, Store> configuredStores = new HashMap<String, Store>();
 
 	/** The configured and initialized object stores. */
-	private final Map<String, ObjectStore<?>> objectStoreCache = new HashMap<String, ObjectStore<?>>();
+	private final Map<String, ObjectStore<?>> objectStores = new HashMap<String, ObjectStore<?>>();
 
 	private final ObjectStoreManager objectStoreManager = new ObjectStoreManager();
 
@@ -74,13 +75,34 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
 		return store;
 	}
 
+	/**
+	 * Returns all the configured association store ids.
+	 * 
+	 * @return
+	 */
+	public Set<String> getConfiguredStores() {
+		return configuredStores.keySet();
+	}
+
+	/**
+	 * Returns the currently initialized object stores.
+	 * <p>
+	 * Note: should be called after at least one {@link #createStore(String)}.
+	 * </p>
+	 * 
+	 * @return
+	 */
+	public Map<String, ObjectStore<?>> getObjectStores() {
+		return objectStores;
+	}
+
 	@SuppressWarnings("rawtypes")
 	private ObjectStore getOrCreateStore(String id) {
-		ObjectStore store = objectStoreCache.get(id);
+		ObjectStore store = objectStores.get(id);
 
 		if (store == null) {
 			store = objectStoreManager.createStore(id, getObjectStoreFile(dataDir, id));
-			objectStoreCache.put(id, store);
+			objectStores.put(id, store);
 		}
 
 		return store;

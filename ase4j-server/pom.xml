@@ -81,18 +81,19 @@
 			<artifactId>ase4j-client</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		
+		<!-- Server logging -->
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<version>0.9.21</version>
+		</dependency>
 
 		<!-- Test dependencies -->
 		<dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
 			<version>1.4</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>ch.qos.logback</groupId>
-			<artifactId>logback-classic</artifactId>
-			<version>0.9.21</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

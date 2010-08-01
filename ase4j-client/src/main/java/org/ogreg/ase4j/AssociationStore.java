@@ -1,5 +1,6 @@
 package org.ogreg.ase4j;
 
+import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.List;
 
@@ -38,7 +39,8 @@ public interface AssociationStore<F, T> {
 	 * @throws AssociationStoreException If the store failed to add the
 	 *             association
 	 */
-	void addAll(Collection<Association<F, T>> froms, T to) throws AssociationStoreException;
+	void addAll(Collection<Association<F, T>> froms, T to) throws AssociationStoreException,
+			RemoteException;
 
 	/**
 	 * Adds all the associations to the storage.
@@ -47,7 +49,8 @@ public interface AssociationStore<F, T> {
 	 * @throws AssociationStoreException If the store failed to add the
 	 *             association
 	 */
-	void addAll(Collection<Association<F, T>> assocs) throws AssociationStoreException;
+	void addAll(Collection<Association<F, T>> assocs) throws AssociationStoreException,
+			RemoteException;
 
 	/**
 	 * Returns the associations from the store, using the <code>query</code>.
