@@ -1,10 +1,17 @@
 package org.ogreg.ase4j.benchmark;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
+import org.ogreg.common.dynamo.DynamicObject;
+import org.ogreg.common.dynamo.DynamicType;
 import org.ogreg.common.utils.MemoryUtils;
 import org.ogreg.util.IntSelector;
 import org.testng.annotations.Test;
@@ -74,11 +81,11 @@ public class PerformanceChecks {
 
 	@Test
 	public void testBooleanVsBitSet() {
-		gc();
+		gc("start");
 		{
 			BitSet bs = new BitSet(10 * 1024 * 1024);
 			System.err.println("BitSet of 10M");
-			gc();
+			gc("bitset");
 
 			long before = System.currentTimeMillis();
 			for (int i = 0; i < bs.size(); i++) {
@@ -89,7 +96,7 @@ public class PerformanceChecks {
 		{
 			boolean[] bool = new boolean[10 * 1024 * 1024];
 			System.err.println("Boolean array of 10M");
-			gc();
+			gc("boolean array");
 
 			long before = System.currentTimeMillis();
 			for (int i = 0; i < bool.length; i++) {
@@ -142,9 +149,78 @@ public class PerformanceChecks {
 		// Also it seems the performance penalty of an instanceof is 10^-6 ms.
 	}
 
-	void gc() {
+	@Test
+	public void _testTypeVsMapVsCustom() throws Exception {
+		int ITERATIONS = 10000000;
+		Object[] dummy = new Object[ITERATIONS / 1000];
+		String url = "testurl";
+		Date date = new Date();
+		long size = 1000;
+
+		gc("start");
+
+		long before, time1, time2, time3;
+
+		{
+			Map<String, Field> fields = new HashMap<String, Field>();
+			for (Field field : TestDataType.class.getDeclaredFields()) {
+				field.setAccessible(true);
+				fields.put(field.getName(), field);
+			}
+			Constructor<TestDataType> ctor = TestDataType.class.getConstructor();
+			ctor.setAccessible(true);
+
+			before = System.currentTimeMillis();
+			for (int i = 0; i < ITERATIONS; i++) {
+				Object data = ctor.newInstance();
+				fields.get("url").set(data, url);
+				fields.get("date").set(data, date);
+				fields.get("size").set(data, size);
+
+				dummy[i % dummy.length] = data;
+			}
+			time1 = System.currentTimeMillis() - before;
+		}
+
+		gc("type");
+
+		{
+			before = System.currentTimeMillis();
+			for (int i = 0; i < ITERATIONS; i++) {
+				Map<String, Object> map = new HashMap<String, Object>();
+				map.put("url", url);
+				map.put("date", date);
+				map.put("size", size);
+				dummy[i % dummy.length] = map;
+			}
+			time2 = System.currentTimeMillis() - before;
+		}
+
+		gc("map");
+
+		{
+			DynamicType type = new DynamicType(new String[] { "url", "date", "size" },
+					new Class<?>[] { String.class, Date.class, Long.class });
+
+			before = System.currentTimeMillis();
+			for (int i = 0; i < ITERATIONS; i++) {
+				DynamicObject dobj = new DynamicObject(type);
+				dobj.set("url", url);
+				dobj.set("date", date);
+				dobj.set("size", size);
+				dummy[i % dummy.length] = dobj;
+			}
+			time3 = System.currentTimeMillis() - before;
+		}
+
+		gc("custom");
+
+		System.err.printf("Type: %d, Map: %d, Custom: %d\n", time1, time2, time3);
+	}
+
+	void gc(String message) {
 		System.gc();
-		System.err.println(MemoryUtils.usedMem() / 1024 + "k");
+		System.err.println("After " + message + ": " + MemoryUtils.usedMem() / 1024 + "k");
 		System.gc();
 	}
 
@@ -191,5 +267,15 @@ public class PerformanceChecks {
 		int getType();
 
 		Type getEnumType();
+	}
+
+	@SuppressWarnings("unused")
+	private static final class TestDataType {
+		String url;
+		Date date;
+		long size;
+
+		public TestDataType() {
+		}
 	}
 }
