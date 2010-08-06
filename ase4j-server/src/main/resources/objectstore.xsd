@@ -70,11 +70,9 @@
 
 	<xsd:complexType name="IdConfig">
 		<xsd:complexContent>
-			<xsd:extension base="BaseElementConfig">
+			<xsd:extension base="BasePropertyConfig">
 				<xsd:sequence>
-					<xsd:element name="index" type="IndexConfig"
-						maxOccurs="1" minOccurs="1">
-					</xsd:element>
+					<xsd:element name="index" type="IndexConfig" maxOccurs="1" minOccurs="1"></xsd:element>
 				</xsd:sequence>
 			</xsd:extension>
 		</xsd:complexContent>
@@ -149,24 +147,34 @@
 
 	<xsd:complexType name="ObjectStorageConfig">
 		<xsd:sequence>
-            <xsd:element name="store" maxOccurs="unbounded"
-            	minOccurs="1">
-            	<xsd:complexType>
-            		<xsd:sequence>
-            			<xsd:element name="class" type="ClassConfig"
-            				maxOccurs="1" minOccurs="1">
-            			</xsd:element>
-            			<xsd:element name="type"
-            				type="InstanceTypeConfig" maxOccurs="1" minOccurs="0">
-            			</xsd:element>
-            		</xsd:sequence>
-            		<xsd:attribute name="id" type="xsd:string"
-            			use="required">
-            		</xsd:attribute>
-            	</xsd:complexType>
-            </xsd:element>
-        </xsd:sequence>
-		<xsd:attribute name="package" type="xsd:string" use="optional">
+			<xsd:element name="store" maxOccurs="unbounded"
+				minOccurs="1">
+				<xsd:complexType>
+					<xsd:sequence>
+						<xsd:element name="class" type="ClassConfig"
+							maxOccurs="1" minOccurs="1">
+						</xsd:element>
+						<xsd:element name="type"
+							type="InstanceTypeConfig" maxOccurs="1" minOccurs="0">
+						</xsd:element>
+					</xsd:sequence>
+					<xsd:attribute name="id" type="xsd:string"
+						use="required">
+					</xsd:attribute>
+					<xsd:attribute name="mode" use="optional"
+						default="class">
+						<xsd:simpleType>
+							<xsd:restriction base="xsd:string">
+								<xsd:enumeration value="class"></xsd:enumeration>
+								<xsd:enumeration value="dynamic"></xsd:enumeration>
+							</xsd:restriction>
+						</xsd:simpleType>
+					</xsd:attribute>
+				</xsd:complexType>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="package" type="xsd:string"
+			use="optional">
 		</xsd:attribute>
 	</xsd:complexType>
 
