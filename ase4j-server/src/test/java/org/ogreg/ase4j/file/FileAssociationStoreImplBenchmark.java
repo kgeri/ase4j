@@ -35,7 +35,7 @@ public class FileAssociationStoreImplBenchmark {
     @BeforeTest public void before() {
         File file = FileTestSupport.createTempFile("store");
         StringStore ostore = new StringStore();
-        ostore.init(String.class, null, null, new HashMap<String, String>());
+        ostore.init(null, null, new HashMap<String, String>());
         store.setFromStore(ostore);
         store.setToStore(ostore);
         store.setStorageFile(file);

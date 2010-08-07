@@ -2,6 +2,8 @@ package org.ogreg.common.dynamo;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+
 
 /**
  * Dynamic object.
@@ -101,5 +103,36 @@ public class DynamicObject implements Serializable {
         Object value = fieldValues[type.fieldIndex(field)];
 
         return fieldType.cast(value);
+    }
+
+    @Override public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = (prime * result) + Arrays.hashCode(fieldValues);
+
+        return result;
+    }
+
+    @Override public boolean equals(Object obj) {
+
+        if (this == obj) {
+            return true;
+        }
+
+        if (obj == null) {
+            return false;
+        }
+
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        DynamicObject other = (DynamicObject) obj;
+
+        if (!Arrays.equals(fieldValues, other.fieldValues)) {
+            return false;
+        }
+
+        return true;
     }
 }

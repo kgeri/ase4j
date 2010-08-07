@@ -49,10 +49,6 @@ class FieldAccessor implements EntityAccessor {
         fields.get(propertyName).set(source, value);
     }
 
-    @Override public void addProperty(String propertyName) {
-        fields.put(propertyName, PropertyUtils.getField(storedType, propertyName));
-    }
-
     @Override public Object newInstance() throws InstantiationException {
 
         try {
@@ -61,5 +57,17 @@ class FieldAccessor implements EntityAccessor {
             throw new InstantiationException("Failed to instantiate " + storedType.getName() +
                 ": " + e.getLocalizedMessage());
         }
+    }
+
+    @Override public void setProperties(Map<String, Class<?>> properties) {
+
+        // TODO Type assert?
+        for (String propertyName : properties.keySet()) {
+            fields.put(propertyName, PropertyUtils.getField(storedType, propertyName));
+        }
+    }
+
+    @Override public String getTypeName() {
+        return storedType.getName();
     }
 }

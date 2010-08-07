@@ -44,10 +44,8 @@ public class StringStore implements ConfigurableObjectStore<String>, Serializabl
     /** The file which stores this instance. */
     private transient File storageFile;
 
-    @Override public synchronized void init(Class<String> type, EntityAccessor accessor,
-        File storageDir, Map<String, String> params) {
-        // TODO type assert?
-
+    @Override public synchronized void init(EntityAccessor accessor, File storageDir,
+        Map<String, String> params) {
         storageFile = ObjectStoreManager.getPropertyFile(storageDir, "strings");
 
         if (storageFile.exists()) {

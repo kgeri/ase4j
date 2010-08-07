@@ -22,8 +22,9 @@ import java.util.Map.Entry;
  */
 public abstract class BaseObjectStore<T> implements ConfigurableObjectStore<T>, Closeable {
 
-    /** The entity's field accessors keyed by the field names. */
-    private final Map<String, PropertyHandler> handlers = new HashMap<String, PropertyHandler>();
+    /** The entity's field persistors keyed by the field names. */
+    private final Map<String, PropertyPersistor> persistors =
+        new HashMap<String, PropertyPersistor>();
 
     /** The entity's unique indices keyed by their field names. */
     private final Map<String, UniqueIndex> uniqueIndices = new HashMap<String, UniqueIndex>();
@@ -39,9 +40,6 @@ public abstract class BaseObjectStore<T> implements ConfigurableObjectStore<T>, 
 
     /** The property accessor used to access the stored type's properties. */
     private EntityAccessor accessor;
-
-    /** The Java type stored by this Object Store. */
-    protected Class<T> storedType;
 
     /**
      * The implementor should return the next available identifier.
@@ -83,9 +81,8 @@ public abstract class BaseObjectStore<T> implements ConfigurableObjectStore<T>, 
      */
     protected abstract PropertyPersistor createExtensionPersistor(String propertyName);
 
-    @Override public void init(Class<T> type, EntityAccessor accessor, File storageDir,
+    @Override public void init(EntityAccessor accessor, File storageDir,
         Map<String, String> params) {
-        this.storedType = type;
         this.accessor = accessor;
     }
 
@@ -126,8 +123,8 @@ public abstract class BaseObjectStore<T> implements ConfigurableObjectStore<T>, 
         try {
 
             // Saving properties
-            for (PropertyHandler handler : handlers.values()) {
-                String propertyName = handler.propertyName;
+            for (Entry<String, PropertyPersistor> e : persistors.entrySet()) {
+                String propertyName = e.getKey();
                 Object value = accessor.getFrom(entity, propertyName);
 
                 if (value == null) {
@@ -141,7 +138,7 @@ public abstract class BaseObjectStore<T> implements ConfigurableObjectStore<T>, 
                     idx.setKey(value, identifier);
                 }
 
-                handler.persistor.store(identifier, null, value);
+                e.getValue().store(identifier, null, value);
             }
         } catch (IllegalArgumentException e) {
             throw new ObjectStoreException(e);
@@ -158,9 +155,9 @@ public abstract class BaseObjectStore<T> implements ConfigurableObjectStore<T>, 
             @SuppressWarnings("unchecked")
             T result = (T) accessor.newInstance();
 
-            for (PropertyHandler handler : handlers.values()) {
-                Object value = handler.persistor.load(identifier, null);
-                accessor.setTo(result, handler.propertyName, value);
+            for (Entry<String, PropertyPersistor> e : persistors.entrySet()) {
+                Object value = e.getValue().load(identifier, null);
+                accessor.setTo(result, e.getKey(), value);
             }
 
             return result;
@@ -172,15 +169,15 @@ public abstract class BaseObjectStore<T> implements ConfigurableObjectStore<T>, 
     @Override public Object getField(long identifier, String fieldName)
         throws ObjectStoreException {
         String[] pathElements = PropertyUtils.splitFirstPathElement(fieldName);
-        PropertyHandler handler = handlers.get(pathElements[0]);
+        PropertyPersistor persistor = persistors.get(pathElements[0]);
 
-        if (handler == null) {
-            throw new ObjectStoreException("Property not found: " + storedType.getName() + "." +
+        if (persistor == null) {
+            throw new ObjectStoreException("Property not found: " + accessor.getTypeName() + "." +
                 fieldName);
         }
 
         try {
-            return handler.persistor.load(identifier, pathElements[1]);
+            return persistor.load(identifier, pathElements[1]);
         } catch (IOException e) {
             throw new ObjectStoreException(e);
         }
@@ -190,12 +187,12 @@ public abstract class BaseObjectStore<T> implements ConfigurableObjectStore<T>, 
         UniqueIndex idx = uniqueIndices.get(fieldName);
 
         if (idx == null) {
-            throw new ObjectStoreException("Field " + storedType.getName() + "." + fieldName +
+            throw new ObjectStoreException("Field " + accessor.getTypeName() + "." + fieldName +
                 " does not have a unique index specified.");
         }
 
         if (value == null) {
-            throw new ObjectStoreException("The field " + storedType.getName() + "." + fieldName +
+            throw new ObjectStoreException("The field " + accessor.getTypeName() + "." + fieldName +
                 " has a unique index, so its value should not be null.");
         }
 
@@ -204,8 +201,8 @@ public abstract class BaseObjectStore<T> implements ConfigurableObjectStore<T>, 
 
     @Override public void flush() throws IOException {
 
-        for (PropertyHandler handler : handlers.values()) {
-            handler.persistor.flush();
+        for (PropertyPersistor persistor : persistors.values()) {
+            persistor.flush();
         }
 
         for (Entry<String, UniqueIndex> e : uniqueIndices.entrySet()) {
@@ -215,8 +212,8 @@ public abstract class BaseObjectStore<T> implements ConfigurableObjectStore<T>, 
 
     @Override public void close() throws IOException {
 
-        for (PropertyHandler handler : handlers.values()) {
-            handler.persistor.close();
+        for (PropertyPersistor persistor : persistors.values()) {
+            persistor.close();
         }
     }
 
@@ -226,28 +223,22 @@ public abstract class BaseObjectStore<T> implements ConfigurableObjectStore<T>, 
 
     @Override public void addProperty(Class<?> propertyType, String propertyName) {
 
-        if (handlers.containsKey(propertyName)) {
+        if (persistors.containsKey(propertyName)) {
             throw new IllegalArgumentException("Property " + propertyName +
                 " is already configured. You cannot configure a property with the same name twice.");
         }
 
-        PropertyHandler handler = new PropertyHandler();
-        handler.propertyName = propertyName;
-        handler.persistor = createPersistor(propertyType, propertyName);
-        handlers.put(propertyName, handler);
+        persistors.put(propertyName, createPersistor(propertyType, propertyName));
     }
 
     @Override public void addExtension(String propertyName) {
 
-        if (handlers.containsKey(propertyName)) {
+        if (persistors.containsKey(propertyName)) {
             throw new IllegalArgumentException("Extension " + propertyName +
                 " is already configured. You cannot configure an extension with the same name twice.");
         }
 
-        PropertyHandler handler = new PropertyHandler();
-        handler.propertyName = propertyName;
-        handler.persistor = createExtensionPersistor(propertyName);
-        handlers.put(propertyName, handler);
+        persistors.put(propertyName, createExtensionPersistor(propertyName));
     }
 
     @Override public void addIndex(String fieldName, UniqueIndex idx) {
@@ -257,7 +248,7 @@ public abstract class BaseObjectStore<T> implements ConfigurableObjectStore<T>, 
     private Object getBusinessKeyValue(T entity) throws ObjectStoreException {
 
         if (uniqueFieldName == null) {
-            throw new IllegalStateException("The type " + storedType.getName() +
+            throw new IllegalStateException("The type " + accessor.getTypeName() +
                 " did not specify a business key. Please mark an appropriate business key with <id> before using this operation.");
         }
 
@@ -266,15 +257,5 @@ public abstract class BaseObjectStore<T> implements ConfigurableObjectStore<T>, 
         } catch (IllegalAccessException e) {
             throw new ObjectStoreException(e);
         }
-    }
-
-    /**
-     * Property access and persistor VO.
-     *
-     * @author  Gergely Kiss
-     */
-    private class PropertyHandler {
-        public String propertyName;
-        public PropertyPersistor persistor;
     }
 }

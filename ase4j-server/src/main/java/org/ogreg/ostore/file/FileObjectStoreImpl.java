@@ -42,9 +42,9 @@ public class FileObjectStoreImpl<T> extends BaseObjectStore<T> {
         return Long.valueOf(nextKey.incrementAndGet());
     }
 
-    @Override public void init(Class<T> type, EntityAccessor accessor, File storageDir,
+    @Override public void init(EntityAccessor accessor, File storageDir,
         Map<String, String> params) {
-        super.init(type, accessor, storageDir, params);
+        super.init(accessor, storageDir, params);
         this.storageDir = storageDir;
 
         try {

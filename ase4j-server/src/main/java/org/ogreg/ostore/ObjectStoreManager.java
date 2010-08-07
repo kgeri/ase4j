@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -79,7 +80,6 @@ public class ObjectStoreManager extends BaseJaxbManager<ObjectStorageConfig> {
         InstanceTypeConfig typeConfig = cfg.getType();
         ClassConfig clazz = cfg.getClazz();
 
-        Class storedType = forName(clazz.getName());
         Map<String, String> params = getParams((typeConfig == null) ? null
                                                                     : typeConfig.getParameter());
 
@@ -90,15 +90,17 @@ public class ObjectStoreManager extends BaseJaxbManager<ObjectStorageConfig> {
         EntityAccessor accessor;
 
         if ("class".equals(mode)) {
-            accessor = new FieldAccessor(storedType);
+            accessor = new FieldAccessor(forName(clazz.getName()));
         } else if ("dynamic".equals(mode)) {
-            accessor = null; // TODO
+            accessor = new DynamoAccessor();
         } else {
             throw new ConfigurationException("Unsupported store mode: " + mode);
         }
 
         // Initializing the store
-        store.init(storedType, accessor, storageDir, params);
+        store.init(accessor, storageDir, params);
+
+        Map<String, Class<?>> properties = new LinkedHashMap<String, Class<?>>();
 
         for (Object property : clazz.getIdOrCompositeIdAndProperty()) {
 
@@ -106,13 +108,14 @@ public class ObjectStoreManager extends BaseJaxbManager<ObjectStorageConfig> {
             if (property instanceof IdConfig) {
                 IdConfig prop = (IdConfig) property;
                 String propertyName = prop.getName();
+                Class<?> propertyType = getPropertyType(cfg, prop);
 
                 UniqueIndex idx = loadOrCreateUniqueIndex(storageDir, propertyName,
                         prop.getIndex());
                 store.setIdPropertyName(propertyName);
-                store.addProperty(getPropertyType(mode, storedType, prop), propertyName);
+                store.addProperty(propertyType, propertyName);
                 store.addIndex(propertyName, idx);
-                accessor.addProperty(propertyName);
+                properties.put(propertyName, propertyType);
             }
             // Composite Business key
             else if (property instanceof CompositeIdConfig) {
@@ -122,9 +125,10 @@ public class ObjectStoreManager extends BaseJaxbManager<ObjectStorageConfig> {
             else if (property instanceof PropertyConfig) {
                 PropertyConfig prop = (PropertyConfig) property;
                 String propertyName = prop.getName();
+                Class<?> propertyType = getPropertyType(cfg, prop);
 
-                store.addProperty(getPropertyType(mode, storedType, prop), propertyName);
-                accessor.addProperty(propertyName);
+                store.addProperty(propertyType, propertyName);
+                properties.put(propertyName, propertyType);
             }
             // Extension
             else if (property instanceof ExtensionConfig) {
@@ -132,9 +136,11 @@ public class ObjectStoreManager extends BaseJaxbManager<ObjectStorageConfig> {
                 String propertyName = prop.getName();
 
                 store.addExtension(propertyName);
-                accessor.addProperty(propertyName);
+                properties.put(propertyName, Map.class);
             }
         }
+
+        accessor.setProperties(properties);
 
         return store;
     }
@@ -149,17 +155,7 @@ public class ObjectStoreManager extends BaseJaxbManager<ObjectStorageConfig> {
         }
 
         for (Store store : config.getStore()) {
-
-            try {
-
-                // Pre-checking config
-                ClassConfig clazz = store.getClazz();
-                Class.forName(packageName + clazz.getName());
-
-                configuredStores.put(store.getId(), store);
-            } catch (ClassNotFoundException e) {
-                throw new ConfigurationException(e);
-            }
+            configuredStores.put(store.getId(), store);
         }
     }
 
@@ -215,14 +211,14 @@ public class ObjectStoreManager extends BaseJaxbManager<ObjectStorageConfig> {
      *
      * @throws  ConfigurationException  if the type can not be determined
      */
-    private Class<?> getPropertyType(String mode, Class<?> storedType,
-        BasePropertyConfig propConfig) {
+    private Class<?> getPropertyType(Store cfg, BasePropertyConfig propConfig) {
 
         String propertyName = propConfig.getName();
         String type = propConfig.getType();
 
-        if ("class".equals(mode)) {
-            return PropertyUtils.getField(storedType, propertyName).getType();
+        if ("class".equals(cfg.getMode())) {
+            return PropertyUtils.getField(forName(cfg.getClazz().getName()), propertyName)
+                .getType();
         } else if (type == null) {
             throw new ConfigurationException("Failed to determine property type for '" +
                 propertyName +

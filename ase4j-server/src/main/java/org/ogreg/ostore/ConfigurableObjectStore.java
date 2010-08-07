@@ -23,12 +23,11 @@ public interface ConfigurableObjectStore<T> extends ObjectStore<T> {
     /**
      * The implementor may perform store initialization here.
      *
-     * @param  type        The stored type
-     * @param  accessor    TODO
+     * @param  accessor    The entity accessor for this type
      * @param  storageDir  The storage data dir (if file-based)
      * @param  params      Implementation specific storage parameters
      */
-    void init(Class<T> type, EntityAccessor accessor, File storageDir, Map<String, String> params);
+    void init(EntityAccessor accessor, File storageDir, Map<String, String> params);
 
     /**
      * Sets the given property as the id of the stored type.

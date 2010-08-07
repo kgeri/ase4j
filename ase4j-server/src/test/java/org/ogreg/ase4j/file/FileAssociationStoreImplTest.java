@@ -51,7 +51,7 @@ public class FileAssociationStoreImplTest {
 
         // Simple string based store
         sstore = new StringStore();
-        sstore.init(String.class, null, null, new HashMap<String, String>());
+        sstore.init(null, null, new HashMap<String, String>());
 
         // Object based store
         ObjectStoreManager cfg = new ObjectStoreManager();

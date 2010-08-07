@@ -20,7 +20,7 @@ public class StringStoreTest {
      */
     @Test public void testCoverage01() throws Exception {
         StringStore test = new StringStore();
-        test.init(String.class, null, null, new HashMap<String, String>());
+        test.init(null, null, new HashMap<String, String>());
 
         // For coverage
         test.add(1, "aaa");

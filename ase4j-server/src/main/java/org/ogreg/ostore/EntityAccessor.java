@@ -1,5 +1,7 @@
 package org.ogreg.ostore;
 
+import java.util.Map;
+
 
 /**
  * SPI interface for {@link ObjectStore} property accessors.
@@ -44,9 +46,16 @@ public interface EntityAccessor {
     Object newInstance() throws InstantiationException;
 
     /**
-     * Configures a property on the accessor.
+     * Sets the accessible properties for this instance.
      *
-     * @param  propertyName
+     * @param  properties
      */
-    void addProperty(String propertyName);
+    void setProperties(Map<String, Class<?>> properties);
+
+    /**
+     * Returns the type name accessed by this instance.
+     *
+     * @return
+     */
+    String getTypeName();
 }
