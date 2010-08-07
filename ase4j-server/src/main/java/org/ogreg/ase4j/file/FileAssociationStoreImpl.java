@@ -1,9 +1,20 @@
 package org.ogreg.ase4j.file;
 
+import org.ogreg.ase4j.Association;
+import org.ogreg.ase4j.AssociationStoreException;
+import org.ogreg.ase4j.AssociationStoreMetadata;
+import org.ogreg.ase4j.ConfigurableAssociationStore;
+import org.ogreg.ase4j.criteria.Query;
+import org.ogreg.ase4j.criteria.QueryExecutionException;
+
+import org.ogreg.ostore.ObjectStore;
+import org.ogreg.ostore.ObjectStoreException;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.Flushable;
 import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -15,215 +26,216 @@ import java.util.Map.Entry;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import org.ogreg.ase4j.Association;
-import org.ogreg.ase4j.AssociationStoreException;
-import org.ogreg.ase4j.ConfigurableAssociationStore;
-import org.ogreg.ase4j.criteria.Query;
-import org.ogreg.ase4j.criteria.QueryExecutionException;
-import org.ogreg.ostore.ObjectStore;
-import org.ogreg.ostore.ObjectStoreException;
 
 /**
  * A file-based implementation of the association store.
- * 
- * @param <F> The association 'from' type
- * @param <T> The association 'to' type
- * @author Gergely Kiss
+ *
+ * @param   <F>  The association 'from' type
+ * @param   <T>  The association 'to' type
+ *
+ * @author  Gergely Kiss
  */
 public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationStore<F, T>,
-		Closeable, Flushable {
-	public static final float VALUE_MUL = 1000;
+    Closeable, Flushable {
+    public static final float VALUE_MUL = 1000;
 
-	/** The index of the from entities. */
-	private ObjectStore<F> fromStore;
+    /** The index of the from entities. */
+    private ObjectStore<F> fromStore;
 
-	/** The object store of the to entities. */
-	private ObjectStore<T> toStore;
+    /** The object store of the to entities. */
+    private ObjectStore<T> toStore;
 
-	/** The file used to store the associations. */
-	private File storageFile;
+    /** The file used to store the associations. */
+    private File storageFile;
 
-	private CachedBlockStore assocs = new CachedBlockStore();
-	private FileAssociationSolver solver = new FileAssociationSolver(this);
+    private CachedBlockStore assocs = new CachedBlockStore();
+    private FileAssociationSolver solver = new FileAssociationSolver(this);
 
-	@Override
-	public void init(ObjectStore<F> from, ObjectStore<T> to, File storageFile) {
-		setFromStore(from);
-		setToStore(to);
-		setStorageFile(storageFile);
+    /** Storage metadata. */
+    private AssociationStoreMetadata metadata;
 
-		init();
-	}
+    @Override public void init(ObjectStore<F> from, ObjectStore<T> to, File storageFile) {
+        setFromStore(from);
+        setToStore(to);
+        setStorageFile(storageFile);
 
-	/**
-	 * Initializes the storage using the given parameters.
-	 * 
-	 * @throws IOException
-	 */
-	@PostConstruct
-	public void init() {
-		try {
+        init();
+    }
 
-			if (fromStore == null) {
-				throw new AssertionError("The field fromIndex must be set");
-			} else if (toStore == null) {
-				throw new AssertionError("The field toStore must be set");
-			}
+    /**
+     * Initializes the storage using the given parameters.
+     *
+     * @throws  IOException
+     */
+    @PostConstruct public void init() {
 
-			close();
+        try {
 
-			assocs.open(storageFile);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
+            if (fromStore == null) {
+                throw new AssertionError("The field fromIndex must be set");
+            } else if (toStore == null) {
+                throw new AssertionError("The field toStore must be set");
+            }
 
-	@Override
-	public void add(F from, T to, float value) throws AssociationStoreException {
-		try {
-			Long fi = fromStore.save(from);
-			Long ti = toStore.save(to);
+            // Closing store if already opened
+            close();
 
-			AssociationBlock a = new AssociationBlock(fi.intValue());
-			a.merge(ti.intValue(), (int) (value * VALUE_MUL));
+            // Opening store at the specified file
+            assocs.open(storageFile);
 
-			assocs.merge(a);
-		} catch (IOException e) {
-			throw new AssociationStoreException(e);
-		} catch (ObjectStoreException e) {
-			throw new AssociationStoreException(e);
-		}
-	}
+            // Adjusting metadata
+            metadata = new AssociationStoreMetadata(fromStore.getMetadata(), toStore.getMetadata());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	@Override
-	public void addAll(Collection<Association<F, T>> froms, T to) throws AssociationStoreException {
-		try {
-			Long ti = toStore.save(to);
+    @Override public void add(F from, T to, float value) throws AssociationStoreException {
 
-			for (Association<F, ?> assoc : froms) {
-				F from = assoc.from;
-				Long fi = fromStore.save(from);
+        try {
+            Long fi = fromStore.save(from);
+            Long ti = toStore.save(to);
 
-				int v = (int) (assoc.value * VALUE_MUL);
+            AssociationBlock a = new AssociationBlock(fi.intValue());
+            a.merge(ti.intValue(), (int) (value * VALUE_MUL));
 
-				AssociationBlock a = new AssociationBlock(fi.intValue());
-				a.merge(ti.intValue(), v);
+            assocs.merge(a);
+        } catch (IOException e) {
+            throw new AssociationStoreException(e);
+        } catch (ObjectStoreException e) {
+            throw new AssociationStoreException(e);
+        }
+    }
 
-				this.assocs.merge(a);
-			}
-		} catch (IOException e) {
-			throw new AssociationStoreException(e);
-		} catch (ObjectStoreException e) {
-			throw new AssociationStoreException(e);
-		}
-	}
+    @Override public void addAll(Collection<Association<F, T>> froms, T to)
+        throws AssociationStoreException {
 
-	@Override
-	public void addAll(Collection<Association<F, T>> assocs) throws AssociationStoreException {
-		Map<F, List<Association<F, T>>> byFrom = new HashMap<F, List<Association<F, T>>>(
-				assocs.size() / 2);
+        try {
+            Long ti = toStore.save(to);
 
-		for (Association<F, T> a : assocs) {
-			List<Association<F, T>> l = byFrom.get(a.from);
+            for (Association<F, ?> assoc : froms) {
+                F from = assoc.from;
+                Long fi = fromStore.save(from);
 
-			if (l == null) {
-				l = new LinkedList<Association<F, T>>();
-				byFrom.put(a.from, l);
-			}
+                int v = (int) (assoc.value * VALUE_MUL);
 
-			l.add(a);
-		}
+                AssociationBlock a = new AssociationBlock(fi.intValue());
+                a.merge(ti.intValue(), v);
 
-		try {
+                this.assocs.merge(a);
+            }
+        } catch (IOException e) {
+            throw new AssociationStoreException(e);
+        } catch (ObjectStoreException e) {
+            throw new AssociationStoreException(e);
+        }
+    }
 
-			for (Entry<F, List<Association<F, T>>> e : byFrom.entrySet()) {
-				F from = e.getKey();
-				Long fi = fromStore.save(from);
+    @Override public void addAll(Collection<Association<F, T>> assocs)
+        throws AssociationStoreException {
+        Map<F, List<Association<F, T>>> byFrom = new HashMap<F, List<Association<F, T>>>(assocs
+                .size() / 2);
 
-				AssociationBlock a = new AssociationBlock(fi.intValue());
+        for (Association<F, T> a : assocs) {
+            List<Association<F, T>> l = byFrom.get(a.from);
 
-				for (Association<F, T> assoc : e.getValue()) {
-					int v = (int) (assoc.value * VALUE_MUL);
-					Long ti = toStore.save(assoc.to);
+            if (l == null) {
+                l = new LinkedList<Association<F, T>>();
+                byFrom.put(a.from, l);
+            }
 
-					// TODO This could be more effective
-					a.merge(ti.intValue(), v);
-				}
+            l.add(a);
+        }
 
-				this.assocs.merge(a);
-			}
-		} catch (IOException e) {
-			throw new AssociationStoreException(e);
-		} catch (ObjectStoreException e) {
-			throw new AssociationStoreException(e);
-		}
-	}
+        try {
 
-	@Override
-	public List<Association<F, T>> query(Query query) throws QueryExecutionException {
-		List<Association<F, T>> ret = new ArrayList<Association<F, T>>(query.limit());
+            for (Entry<F, List<Association<F, T>>> e : byFrom.entrySet()) {
+                F from = e.getKey();
+                Long fi = fromStore.save(from);
 
-		// Solving the query
-		AssociationResultBlock results = solver.solve(query);
+                AssociationBlock a = new AssociationBlock(fi.intValue());
 
-		try {
-			int[] tos = results.tos;
-			int[] values = results.values;
+                for (Association<F, T> assoc : e.getValue()) {
+                    int v = (int) (assoc.value * VALUE_MUL);
+                    Long ti = toStore.save(assoc.to);
 
-			for (int i = 0; i < results.size; i++) {
-				T to = toStore.get(tos[i]);
-				float value = (float) values[i] / VALUE_MUL;
+                    // TODO This could be more effective
+                    a.merge(ti.intValue(), v);
+                }
 
-				ret.add(new Association<F, T>(null, to, value));
-			}
-		} catch (ObjectStoreException e) {
-			throw new QueryExecutionException(e);
-		}
+                this.assocs.merge(a);
+            }
+        } catch (IOException e) {
+            throw new AssociationStoreException(e);
+        } catch (ObjectStoreException e) {
+            throw new AssociationStoreException(e);
+        }
+    }
 
-		return ret;
-	}
+    @Override public List<Association<F, T>> query(Query query) throws QueryExecutionException {
+        List<Association<F, T>> ret = new ArrayList<Association<F, T>>(query.limit());
 
-	AssociationBlock getAssociation(int from) throws IOException {
-		return assocs.get(from);
-	}
+        // Solving the query
+        AssociationResultBlock results = solver.solve(query);
 
-	@Override
-	public synchronized void flush() throws IOException {
-		assocs.flush();
-	}
+        try {
+            int[] tos = results.tos;
+            int[] values = results.values;
 
-	@Override
-	@PreDestroy
-	public synchronized void close() throws IOException {
-		assocs.close();
-	}
+            for (int i = 0; i < results.size; i++) {
+                T to = toStore.get(tos[i]);
+                float value = (float) values[i] / VALUE_MUL;
 
-	@Override
-	protected void finalize() throws Throwable {
-		close();
-	}
+                ret.add(new Association<F, T>(null, to, value));
+            }
+        } catch (ObjectStoreException e) {
+            throw new QueryExecutionException(e);
+        }
 
-	public ObjectStore<F> getFromStore() {
-		return fromStore;
-	}
+        return ret;
+    }
 
-	public void setFromStore(ObjectStore<F> fromStore) {
-		this.fromStore = fromStore;
-	}
+    AssociationBlock getAssociation(int from) throws IOException {
+        return assocs.get(from);
+    }
 
-	public ObjectStore<T> getToStore() {
-		return toStore;
-	}
+    @Override public synchronized void flush() throws IOException {
+        assocs.flush();
+    }
 
-	public void setToStore(ObjectStore<T> toStore) {
-		this.toStore = toStore;
-	}
+    @Override @PreDestroy public synchronized void close() throws IOException {
+        assocs.close();
+    }
 
-	public File getStorageFile() {
-		return storageFile;
-	}
+    @Override protected void finalize() throws Throwable {
+        close();
+    }
 
-	public void setStorageFile(File storageFile) {
-		this.storageFile = storageFile;
-	}
+    public ObjectStore<F> getFromStore() {
+        return fromStore;
+    }
+
+    public void setFromStore(ObjectStore<F> fromStore) {
+        this.fromStore = fromStore;
+    }
+
+    public ObjectStore<T> getToStore() {
+        return toStore;
+    }
+
+    public void setToStore(ObjectStore<T> toStore) {
+        this.toStore = toStore;
+    }
+
+    public File getStorageFile() {
+        return storageFile;
+    }
+
+    public void setStorageFile(File storageFile) {
+        this.storageFile = storageFile;
+    }
+
+    @Override public AssociationStoreMetadata getMetadata() {
+        return metadata;
+    }
 }

@@ -12,7 +12,12 @@ import java.util.Map;
  * @author  Gergely Kiss
  */
 class DynamoAccessor implements EntityAccessor {
+    private final String storedTypeName;
     private DynamicType type;
+
+    public DynamoAccessor(String storedTypeName) {
+        this.storedTypeName = storedTypeName;
+    }
 
     @Override public Object getFrom(Object source, String propertyName)
         throws IllegalAccessException {
@@ -29,10 +34,14 @@ class DynamoAccessor implements EntityAccessor {
     }
 
     @Override public void setProperties(Map<String, Class<?>> properties) {
-        type = new DynamicType(properties);
+        type = DynamicType.define(storedTypeName, properties);
     }
 
     @Override public String getTypeName() {
         return type.toString();
+    }
+
+    public DynamicType getType() {
+        return type;
     }
 }

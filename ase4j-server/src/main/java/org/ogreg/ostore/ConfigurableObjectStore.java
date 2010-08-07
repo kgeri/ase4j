@@ -64,4 +64,11 @@ public interface ConfigurableObjectStore<T> extends ObjectStore<T> {
      * @param  idx
      */
     void addIndex(String fieldName, UniqueIndex idx);
+
+    /**
+     * Sets the store's metadata.
+     *
+     * @param  object
+     */
+    void setMetadata(ObjectStoreMetadata metadata);
 }

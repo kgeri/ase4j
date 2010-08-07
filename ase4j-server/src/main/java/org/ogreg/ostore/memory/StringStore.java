@@ -8,6 +8,7 @@ import org.ogreg.ostore.EntityAccessor;
 import org.ogreg.ostore.ObjectStore;
 import org.ogreg.ostore.ObjectStoreException;
 import org.ogreg.ostore.ObjectStoreManager;
+import org.ogreg.ostore.ObjectStoreMetadata;
 import org.ogreg.ostore.index.UniqueIndex;
 
 import org.ogreg.util.Trie;
@@ -43,6 +44,9 @@ public class StringStore implements ConfigurableObjectStore<String>, Serializabl
 
     /** The file which stores this instance. */
     private transient File storageFile;
+
+    /** Storage metadata. */
+    private ObjectStoreMetadata metadata;
 
     @Override public synchronized void init(EntityAccessor accessor, File storageDir,
         Map<String, String> params) {
@@ -136,5 +140,13 @@ public class StringStore implements ConfigurableObjectStore<String>, Serializabl
 
     @Override public void addIndex(String fieldName, UniqueIndex idx) {
         // Do nothing
+    }
+
+    @Override public ObjectStoreMetadata getMetadata() {
+        return metadata;
+    }
+
+    @Override public void setMetadata(ObjectStoreMetadata metadata) {
+        this.metadata = metadata;
     }
 }

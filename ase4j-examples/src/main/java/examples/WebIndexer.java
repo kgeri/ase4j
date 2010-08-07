@@ -1,7 +1,39 @@
 package examples;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.impl.client.DefaultHttpClient;
+
+import org.apache.xerces.parsers.AbstractSAXParser;
+import org.apache.xerces.xni.Augmentations;
+import org.apache.xerces.xni.QName;
+import org.apache.xerces.xni.XMLAttributes;
+import org.apache.xerces.xni.XMLString;
+import org.apache.xerces.xni.XNIException;
+
+import org.cyberneko.html.HTMLConfiguration;
+
+import org.ogreg.ase4j.Association;
+import org.ogreg.ase4j.AssociationStore;
+import org.ogreg.ase4j.AssociationStoreException;
+import org.ogreg.ase4j.AssociationStoreManager;
+import org.ogreg.ase4j.file.FileAssociationStoreImpl;
+
+import org.ogreg.common.dynamo.DynamicObject;
+import org.ogreg.common.dynamo.DynamicType;
+
+import org.ogreg.ostore.ObjectStoreException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
 import java.io.File;
 import java.io.IOException;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -9,197 +41,181 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.StringTokenizer;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.xerces.parsers.AbstractSAXParser;
-import org.apache.xerces.xni.Augmentations;
-import org.apache.xerces.xni.QName;
-import org.apache.xerces.xni.XMLAttributes;
-import org.apache.xerces.xni.XMLString;
-import org.apache.xerces.xni.XNIException;
-import org.cyberneko.html.HTMLConfiguration;
-import org.ogreg.ase4j.Association;
-import org.ogreg.ase4j.AssociationStore;
-import org.ogreg.ase4j.AssociationStoreException;
-import org.ogreg.ase4j.AssociationStoreManager;
-import org.ogreg.ase4j.file.FileAssociationStoreImpl;
-import org.ogreg.ostore.ObjectStoreException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 /**
  * An example of storing indexed associations in the storage.
- * 
- * @author Gergely Kiss
+ *
+ * @author  Gergely Kiss
  */
 public class WebIndexer {
-	private static final Logger log = LoggerFactory.getLogger(WebIndexer.class);
-	DefaultHttpClient client;
+    private static final Logger log = LoggerFactory.getLogger(WebIndexer.class);
+    DefaultHttpClient client;
 
-	AssociationStore<String, Document> store;
-	Stack<Page> stack = new Stack<Page>();
-	int indexed = 0;
+    AssociationStore<String, DynamicObject> store;
+    Stack<Page> stack = new Stack<Page>();
+    int indexed = 0;
 
-	@SuppressWarnings("unchecked")
-	private void start() throws IOException, ObjectStoreException {
-		String url = System.getProperty("url");
+    @SuppressWarnings("unchecked")
+    private void start() throws IOException, ObjectStoreException {
+        String url = System.getProperty("url");
 
-		if (url == null) {
-			throw new IllegalArgumentException("The system property -Durl must be specified");
-		}
+        if (url == null) {
+            throw new IllegalArgumentException("The system property -Durl must be specified");
+        }
 
-		int depth = Integer.getInteger("depth", 2);
+        int depth = Integer.getInteger("depth", 2);
 
-		String dataPath = System.getProperty("dataDir");
-		File dataDir = new File((dataPath == null) ? "target" : dataPath);
+        String dataPath = System.getProperty("dataDir");
+        File dataDir = new File((dataPath == null) ? "target" : dataPath);
 
-		log.info("Initializing stores.");
+        log.info("Initializing stores.");
 
-		AssociationStoreManager cfg = new AssociationStoreManager();
-		cfg.setDataDir(dataDir);
-		cfg.add("store.xml");
+        AssociationStoreManager cfg = new AssociationStoreManager();
+        cfg.setDataDir(dataDir);
+        cfg.add("store.xml");
 
-		store = cfg.createStore("index");
+        store = cfg.createStore("index");
 
-		log.info("Stores initialized. Indexing: {}", url);
+        log.info("Stores initialized. Indexing: {}", url);
 
-		client = new DefaultHttpClient();
-		stack.push(new Page(url, 0));
+        client = new DefaultHttpClient();
+        stack.push(new Page(url, 0));
 
-		while (!stack.isEmpty()) {
-			Page page = stack.pop();
+        while (!stack.isEmpty()) {
+            Page page = stack.pop();
 
-			if (page.level >= depth) {
-				continue;
-			}
+            if (page.level >= depth) {
+                continue;
+            }
 
-			try {
-				index(page.url, page.level);
+            try {
+                index(page.url, page.level);
 
-				log.info("Page indexed successfully: {}", page.url);
-			} catch (Exception e) {
-				log.error("Failed to index: {} ({})", page.url, e.getLocalizedMessage());
-				log.debug("Failure trace", e);
-			}
-		}
+                log.info("Page indexed successfully: {}", page.url);
+            } catch (Exception e) {
+                log.error("Failed to index: {} ({})", page.url, e.getLocalizedMessage());
+                log.debug("Failure trace", e);
+            }
+        }
 
-		// TODO Flush strategy
-		@SuppressWarnings("rawtypes")
-		FileAssociationStoreImpl s = (FileAssociationStoreImpl) store;
-		s.flush();
-		s.getFromStore().flush();
-		s.getToStore().flush();
+        // TODO Flush strategy
+        @SuppressWarnings("rawtypes")
+        FileAssociationStoreImpl s = (FileAssociationStoreImpl) store;
+        s.flush();
+        s.getFromStore().flush();
+        s.getToStore().flush();
 
-		log.info("Indexing finished. Indexed {} pages", indexed);
-	}
+        log.info("Indexing finished. Indexed {} pages", indexed);
+    }
 
-	private void index(String url, int level) throws IOException, IllegalStateException,
-			SAXException, AssociationStoreException {
-		log.debug("Downloading page: {}", url);
+    private void index(String url, int level) throws IOException, IllegalStateException,
+        SAXException, AssociationStoreException {
+        log.debug("Downloading page: {}", url);
 
-		HttpUriRequest request = new HttpGet(url);
-		HtmlParser parser = new HtmlParser(url);
+        HttpUriRequest request = new HttpGet(url);
+        HtmlParser parser = new HtmlParser(url);
 
-		try {
-			HttpResponse response = client.execute(request);
+        try {
+            HttpResponse response = client.execute(request);
 
-			int status = response.getStatusLine().getStatusCode();
+            int status = response.getStatusLine().getStatusCode();
 
-			if (status != 200) {
-				throw new IOException("Server returned status " + status + " for URL: " + url);
-			}
+            if (status != 200) {
+                throw new IOException("Server returned status " + status + " for URL: " + url);
+            }
 
-			parser.parse(new InputSource(response.getEntity().getContent()));
-		} finally {
-			request.abort();
-		}
+            parser.parse(new InputSource(response.getEntity().getContent()));
+        } finally {
+            request.abort();
+        }
 
-		for (String childUrl : parser.getUrls()) {
-			stack.push(new Page(childUrl, level + 1));
-		}
+        for (String childUrl : parser.getUrls()) {
+            stack.push(new Page(childUrl, level + 1));
+        }
 
-		Document doc = new Document(url);
-		StringTokenizer tok = new StringTokenizer(parser.getText().toString(), " -!?,;.()[]|\u00a0");
-		Collection<Association<String, Document>> assocs = new LinkedList<Association<String, Document>>();
+        DynamicType type = store.getMetadata().getToMetadata().getDynamicType();
 
-		while (tok.hasMoreTokens()) {
-			String token = tok.nextToken();
+        DynamicObject doc = new DynamicObject(type);
+        doc.set("url", url);
 
-			if (token == null) {
-				continue;
-			}
+        StringTokenizer tok = new StringTokenizer(parser.getText().toString(),
+                " -!?,;.()[]|\u00a0");
+        Collection<Association<String, DynamicObject>> assocs =
+            new LinkedList<Association<String, DynamicObject>>();
 
-			token = token.trim().toLowerCase();
+        while (tok.hasMoreTokens()) {
+            String token = tok.nextToken();
 
-			if ((token.length() == 0) || (token.length() > 20)) {
-				continue;
-			}
+            if (token == null) {
+                continue;
+            }
 
-			assocs.add(new Association<String, Document>(token, null, 0.5F));
-		}
+            token = token.trim().toLowerCase();
 
-		store.addAll(assocs, doc);
+            if ((token.length() == 0) || (token.length() > 20)) {
+                continue;
+            }
 
-		indexed++;
-	}
+            // 'to' is null, because we'll use addAll for doc
+            assocs.add(new Association<String, DynamicObject>(token, null, 0.5F));
+        }
 
-	public static void main(String[] args) throws Exception {
-		new WebIndexer().start();
-	}
+        store.addAll(assocs, doc);
 
-	class Page {
-		final String url;
-		final int level;
+        indexed++;
+    }
 
-		public Page(String url, int level) {
-			this.url = url;
-			this.level = level;
-		}
-	}
+    public static void main(String[] args) throws Exception {
+        new WebIndexer().start();
+    }
 
-	class HtmlParser extends AbstractSAXParser {
-		StringBuilder buf = new StringBuilder();
-		Set<String> urls = new HashSet<String>();
-		String baseUrl;
+    class Page {
+        final String url;
+        final int level;
 
-		public HtmlParser(String baseUrl) {
-			super(new HTMLConfiguration());
-			this.baseUrl = baseUrl;
-		}
+        public Page(String url, int level) {
+            this.url = url;
+            this.level = level;
+        }
+    }
 
-		@Override
-		public void startElement(QName element, XMLAttributes attributes, Augmentations augs)
-				throws XNIException {
+    class HtmlParser extends AbstractSAXParser {
+        StringBuilder buf = new StringBuilder();
+        Set<String> urls = new HashSet<String>();
+        String baseUrl;
 
-			if ("A".equalsIgnoreCase(element.localpart)) {
-				String url = attributes.getValue("href");
+        public HtmlParser(String baseUrl) {
+            super(new HTMLConfiguration());
+            this.baseUrl = baseUrl;
+        }
 
-				if ((url != null) && !url.contains("#")) {
+        @Override public void startElement(QName element, XMLAttributes attributes,
+            Augmentations augs) throws XNIException {
 
-					if (url.startsWith("http://")) {
-						urls.add(url);
-					} else {
-						urls.add(baseUrl + "/" + url);
-					}
-				}
-			}
-		}
+            if ("A".equalsIgnoreCase(element.localpart)) {
+                String url = attributes.getValue("href");
 
-		@Override
-		public void characters(XMLString text, Augmentations augs) throws XNIException {
-			buf.append(text.ch, text.offset, text.length);
-		}
+                if ((url != null) && !url.contains("#")) {
 
-		public StringBuilder getText() {
-			return buf;
-		}
+                    if (url.startsWith("http://")) {
+                        urls.add(url);
+                    } else {
+                        urls.add(baseUrl + "/" + url);
+                    }
+                }
+            }
+        }
 
-		public Set<String> getUrls() {
-			return urls;
-		}
-	}
+        @Override public void characters(XMLString text, Augmentations augs) throws XNIException {
+            buf.append(text.ch, text.offset, text.length);
+        }
+
+        public StringBuilder getText() {
+            return buf;
+        }
+
+        public Set<String> getUrls() {
+            return urls;
+        }
+    }
 }

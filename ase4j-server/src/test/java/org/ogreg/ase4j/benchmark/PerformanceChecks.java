@@ -237,7 +237,7 @@ import java.util.Random;
             props.put("date", Date.class);
             props.put("size", Long.class);
 
-            DynamicType type = new DynamicType(props);
+            DynamicType type = DynamicType.define("test", props);
 
             before = System.currentTimeMillis();
 

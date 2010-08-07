@@ -89,10 +89,15 @@ public class ObjectStoreManager extends BaseJaxbManager<ObjectStorageConfig> {
         // Setting accessor based on store mode
         EntityAccessor accessor;
 
+        String dynamicType = clazz.getName();
+
         if ("class".equals(mode)) {
-            accessor = new FieldAccessor(forName(clazz.getName()));
+            Class<?> staticType = forName(dynamicType);
+            accessor = new FieldAccessor(staticType);
+            store.setMetadata(new ObjectStoreMetadata(staticType, null));
         } else if ("dynamic".equals(mode)) {
-            accessor = new DynamoAccessor();
+            accessor = new DynamoAccessor(dynamicType);
+            // Setting dynamic metadata after all properties are processed
         } else {
             throw new ConfigurationException("Unsupported store mode: " + mode);
         }
@@ -100,6 +105,7 @@ public class ObjectStoreManager extends BaseJaxbManager<ObjectStorageConfig> {
         // Initializing the store
         store.init(accessor, storageDir, params);
 
+        // Processing properties
         Map<String, Class<?>> properties = new LinkedHashMap<String, Class<?>>();
 
         for (Object property : clazz.getIdOrCompositeIdAndProperty()) {
@@ -141,6 +147,10 @@ public class ObjectStoreManager extends BaseJaxbManager<ObjectStorageConfig> {
         }
 
         accessor.setProperties(properties);
+
+        if ("dynamic".equals(cfg.getMode())) {
+            store.setMetadata(new ObjectStoreMetadata(null, ((DynamoAccessor) accessor).getType()));
+        }
 
         return store;
     }

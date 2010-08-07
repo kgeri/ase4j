@@ -50,9 +50,9 @@ public class DynamicObject implements Serializable {
      * @param   field  The name of the field to set
      * @param   value  The value to set
      *
-     * @throws  IllegalAccessException  if the field does not exist in this {@link DynamicType}
+     * @throws  DynamicAccessException  if the field does not exist in this {@link DynamicType}
      */
-    public void set(String field, Object value) throws IllegalAccessException {
+    public void set(String field, Object value) throws DynamicAccessException {
         fieldValues[type.fieldIndex(field)] = value;
     }
 
@@ -63,9 +63,9 @@ public class DynamicObject implements Serializable {
      *
      * @return  The value of the field, null if it was never set
      *
-     * @throws  IllegalAccessException  if the field does not exist in this {@link DynamicType}
+     * @throws  DynamicAccessException  if the field does not exist in this {@link DynamicType}
      */
-    public Object get(String field) throws IllegalAccessException {
+    public Object get(String field) throws DynamicAccessException {
         return fieldValues[type.fieldIndex(field)];
     }
 
@@ -75,10 +75,10 @@ public class DynamicObject implements Serializable {
      * @param   field  The name of the field to set
      * @param   value  The value to set. You may set null to fields of any type
      *
-     * @throws  IllegalAccessException  if the field does not exist in this {@link DynamicType}
+     * @throws  DynamicAccessException  if the field does not exist in this {@link DynamicType}
      * @throws  ClassCastException      if <code>value</code> is not of the field type
      */
-    public <T> void safeSet(String field, T value) throws IllegalAccessException {
+    public <T> void safeSet(String field, T value) throws DynamicAccessException {
         int i = type.fieldIndex(field);
 
         if (value != null) {
@@ -96,10 +96,10 @@ public class DynamicObject implements Serializable {
      *
      * @return  The value of the field, null if it was never set
      *
-     * @throws  IllegalAccessException  if the field does not exist in this {@link DynamicType}
+     * @throws  DynamicAccessException  if the field does not exist in this {@link DynamicType}
      * @throws  ClassCastException      if the field value is not of <code>fieldType</code>
      */
-    public <T> T safeGet(String field, Class<T> fieldType) throws IllegalAccessException {
+    public <T> T safeGet(String field, Class<T> fieldType) throws DynamicAccessException {
         Object value = fieldValues[type.fieldIndex(field)];
 
         return fieldType.cast(value);

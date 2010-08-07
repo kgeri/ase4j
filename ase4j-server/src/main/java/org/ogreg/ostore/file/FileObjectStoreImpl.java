@@ -9,6 +9,7 @@ import org.ogreg.ostore.BaseObjectStore;
 import org.ogreg.ostore.EntityAccessor;
 import org.ogreg.ostore.ObjectStore;
 import org.ogreg.ostore.ObjectStoreManager;
+import org.ogreg.ostore.ObjectStoreMetadata;
 import org.ogreg.ostore.PropertyPersistor;
 import org.ogreg.ostore.index.UniqueIndex;
 
@@ -37,6 +38,9 @@ public class FileObjectStoreImpl<T> extends BaseObjectStore<T> {
 
     /** The "sequence generator". */
     private AtomicInteger nextKey;
+
+    /** Storage metadata. */
+    private ObjectStoreMetadata metadata;
 
     @Override protected long getNextId() {
         return Long.valueOf(nextKey.incrementAndGet());
@@ -126,5 +130,13 @@ public class FileObjectStoreImpl<T> extends BaseObjectStore<T> {
         }
 
         return persistor;
+    }
+
+    @Override public ObjectStoreMetadata getMetadata() {
+        return metadata;
+    }
+
+    @Override public void setMetadata(ObjectStoreMetadata metadata) {
+        this.metadata = metadata;
     }
 }

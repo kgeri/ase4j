@@ -4,9 +4,9 @@
 	xsi:schemaLocation="http://ase4j.googlecode.com/schema ../../../../ase4j-server/src/main/resources/associationstore.xsd">
 
 	<objects>
-		<store id="documents">
-			<class name="examples.Document">
-				<id name="url">
+		<store id="documents" mode="dynamic">
+			<class name="example.Document">
+				<id name="url" type="java.lang.String">
 					<index type="trie" />
 				</id>
 			</class>

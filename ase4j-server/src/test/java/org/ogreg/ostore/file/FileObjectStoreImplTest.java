@@ -304,16 +304,11 @@ public class FileObjectStoreImplTest {
         fields.put("added", Date.class);
         fields.put("extensions", Map.class);
 
-        DynamicObject td = new DynamicObject(new DynamicType(fields));
-
-        try {
-            td.safeSet("id", id);
-            td.safeSet("url", url);
-            td.safeSet("added", added);
-            td.safeSet("extensions", new HashMap<String, Object>());
-        } catch (IllegalAccessException e) {
-            fail("Failed to initialize test data", e);
-        }
+        DynamicObject td = new DynamicObject(DynamicType.define("test", fields));
+        td.safeSet("id", id);
+        td.safeSet("url", url);
+        td.safeSet("added", added);
+        td.safeSet("extensions", new HashMap<String, Object>());
 
         return td;
     }
