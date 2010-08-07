@@ -1,202 +1,214 @@
 package org.ogreg.ase4j;
 
-import gnu.cajo.invoke.Remote;
-import gnu.cajo.utils.ItemServer;
-
-import java.io.Closeable;
-import java.io.File;
-import java.io.Flushable;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.ogreg.ostore.ObjectStore;
+import org.ogreg.ostore.ObjectStoreManager;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import gnu.cajo.invoke.Remote;
+import gnu.cajo.utils.ItemServer;
+
+import java.io.File;
+import java.io.IOException;
+
+import java.util.Map;
+import java.util.Map.Entry;
+
+
 /**
  * Association storage service entry point.
- * 
- * @author Gergely Kiss
+ *
+ * @author  Gergely Kiss
  */
 public class StorageService {
-	private static final Logger log = LoggerFactory.getLogger(StorageService.class);
+    private static final Logger log = LoggerFactory.getLogger(StorageService.class);
 
-	private AssociationStoreManager storeManager;
-	private final Map<String, AssociationStore<?, ?>> associationStores = new HashMap<String, AssociationStore<?, ?>>();
+    private AssociationStoreManager storeManager;
+    private boolean running = false;
 
-	private boolean running = false;
+    public void start() throws Exception {
+        running = true;
 
-	public void start() throws Exception {
-		running = true;
+        log.info("Starting up storage...");
 
-		log.info("Starting up storage...");
-		// TODO PerformanceTimer - CJC maybe?
-		long before = System.currentTimeMillis();
+        // TODO PerformanceTimer - CJC maybe?
+        long before = System.currentTimeMillis();
 
-		// Reading configuration
-		String dataPath = System.getProperty("dataDir", "data");
-		String schemaPath = System.getProperty("schema", "schema.xml");
-		int rmiPort = Integer.getInteger("rmiPort", 1198);
+        // Reading configuration
+        String dataPath = System.getProperty("dataDir", "data");
+        String schemaPath = System.getProperty("schema", "schema.xml");
+        int rmiPort = Integer.getInteger("rmiPort", 1198);
 
-		File dataDir = new File(dataPath);
-		File schemaFile = new File(schemaPath);
+        File dataDir = new File(dataPath);
+        File schemaFile = new File(schemaPath);
 
-		// TODO check permissions?
-		log.debug("Using data dir: {}", dataDir);
+        // TODO check permissions?
+        log.debug("Using data dir: {}", dataDir);
 
-		// Initializing Cajo
-		Remote.config(null, rmiPort, null, 0);
+        // Initializing Cajo
+        Remote.config(null, rmiPort, null, 0);
 
-		// Initializing storage
-		// TODO Load multiple configs?
-		storeManager = new AssociationStoreManager();
-		storeManager.add(schemaFile);
-		storeManager.setDataDir(dataDir);
+        // Initializing storage
+        // TODO Load multiple configs?
+        storeManager = new AssociationStoreManager();
+        storeManager.add(schemaFile);
+        storeManager.setDataDir(dataDir);
 
-		// Publishing association storage
-		log.debug("Configuring association storage");
-		int assocStores = 0;
+        // Publishing association storage
+        log.debug("Configuring association storage");
 
-		for (String id : storeManager.getConfiguredStores()) {
-			String serviceLoc = "assocs/" + id;
+        int assocStores = 0;
 
-			try {
-				@SuppressWarnings("rawtypes")
-				AssociationStore store = storeManager.createStore(id);
-				ItemServer.bind(store, serviceLoc);
-				associationStores.put(id, store);
-				assocStores++;
-				log.debug("Successfully initialized assoc store at: {}", serviceLoc);
-			} catch (Exception e) {
-				log.error("Failed to initialize assoc store: {} ({})", id, e.getLocalizedMessage());
-				log.debug("Failure trace", e);
-			}
-		}
+        for (Entry<String, AssociationStore<?, ?>> en :
+            storeManager.getConfiguredStores().entrySet()) {
+            String serviceLoc = "assocs/" + en.getKey();
 
-		log.info("Initialized {}/{} assoc stores successfully", assocStores, storeManager
-				.getConfiguredStores().size());
+            try {
+                ItemServer.bind(en.getValue(), serviceLoc);
+                assocStores++;
+                log.debug("Successfully initialized assoc store at: {}", serviceLoc);
+            } catch (Exception e) {
+                log.error("Failed to initialize assoc store: {} ({})", en.getKey(),
+                    e.getLocalizedMessage());
+                log.debug("Failure trace", e);
+            }
+        }
 
-		// Publishing object storage
-		log.debug("Configuring object storage");
-		int objectStores = 0;
+        log.info("Initialized {}/{} assoc stores successfully", assocStores,
+            storeManager.getConfiguredStores().size());
 
-		for (Entry<String, ObjectStore<?>> en : storeManager.getObjectStores().entrySet()) {
-			String id = en.getKey();
-			String serviceLoc = "objects/" + id;
+        // Publishing object storage
+        log.debug("Configuring object storage");
 
-			try {
-				ItemServer.bind(en.getValue(), serviceLoc);
-				objectStores++;
-				log.debug("Successfully initialized object store at: {}", serviceLoc);
-			} catch (Exception e) {
-				log.error("Failed to initialize object store: {} ({})", id, e.getLocalizedMessage());
-				log.debug("Failure trace", e);
-			}
-		}
+        int objectStores = 0;
+        Map<String, ObjectStore<?>> ostores = storeManager.getObjectManager().getObjectStores();
 
-		// TODO PerformanceTimer
-		long time = System.currentTimeMillis() - before;
-		log.info("Initialized {}/{} object stores successfully", objectStores, storeManager
-				.getObjectStores().size());
+        for (Entry<String, ObjectStore<?>> en : ostores.entrySet()) {
+            String id = en.getKey();
+            String serviceLoc = "objects/" + id;
 
-		log.info("Startup completed in {} ms, waiting for requests", time);
+            try {
+                ItemServer.bind(en.getValue(), serviceLoc);
+                objectStores++;
+                log.debug("Successfully initialized object store at: {}", serviceLoc);
+            } catch (Exception e) {
+                log.error("Failed to initialize object store: {} ({})", id,
+                    e.getLocalizedMessage());
+                log.debug("Failure trace", e);
+            }
+        }
 
-		// Adding shutdown hook (Ctrl+C)
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run() {
-				shutdown();
-			}
-		});
+        // TODO PerformanceTimer
+        long time = System.currentTimeMillis() - before;
+        log.info("Initialized {}/{} object stores successfully", objectStores, ostores.size());
 
-		// Starting console
-		Thread console = new Thread("Console") {
-			@Override
-			public void run() {
-				try {
-					System.out.println("Enter 'q' or Ctrl+C to quit");
-					while (running) {
-						int b = System.in.read();
-						if (b < 0 || b == 'q') {
-							shutdown();
-						}
-					}
-				} catch (IOException e) {
-					log.error("Failed to read from System.in");
-				}
-			}
-		};
-		console.setDaemon(true);
-		console.start();
+        log.info("Startup completed in {} ms, waiting for requests", time);
 
-		while (running) {
-			Thread.sleep(100);
-		}
-	}
+        // Adding shutdown hook (Ctrl+C)
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+                @Override public void run() {
+                    shutdown();
+                }
+            });
 
-	public synchronized void shutdown() {
-		if (!running) {
-			return;
-		}
+        // Starting console
+        Thread console = new Thread("Console") {
+                @Override public void run() {
 
-		// TODO PerformanceTimer
-		long before = System.currentTimeMillis();
+                    try {
+                        System.out.println("Enter 'q' or Ctrl+C to quit");
 
-		log.debug("Shutting down assoc storage");
-		for (Entry<String, AssociationStore<?, ?>> e : associationStores.entrySet()) {
-			String id = e.getKey();
-			AssociationStore<?, ?> store = e.getValue();
+                        while (running) {
+                            int b = System.in.read();
 
-			shutdownStore(id, store);
-		}
+                            if ((b < 0) || (b == 'q')) {
+                                shutdown();
+                            }
+                        }
+                    } catch (IOException e) {
+                        log.error("Failed to read from System.in");
+                    }
+                }
+            };
 
-		log.debug("Shutting down object storage");
-		for (Entry<String, ObjectStore<?>> e : storeManager.getObjectStores().entrySet()) {
-			String id = e.getKey();
-			ObjectStore<?> store = e.getValue();
+        console.setDaemon(true);
+        console.start();
 
-			shutdownStore(id, store);
-		}
+        while (running) {
+            Thread.sleep(100);
+        }
+    }
 
-		// TODO PerformanceTimer
-		long time = System.currentTimeMillis() - before;
-		log.info("Shutdown completed in {} ms. Bye!", time);
+    public synchronized void shutdown() {
 
-		// Shutting down RMI
-		Remote.shutdown();
+        if (!running) {
+            return;
+        }
 
-		running = false;
-	}
+        // TODO PerformanceTimer
+        long before = System.currentTimeMillis();
 
-	void shutdownStore(String id, Object store) {
-		try {
-			if (store instanceof Flushable) {
-				((Flushable) store).flush();
-			}
-			log.debug("Successfully flushed storage: {}", id);
-		} catch (Exception e) {
-			log.error("Failed to flush: {} ({}), trying to close", id);
-			log.debug("Failure trace", e);
-		}
+        log.debug("Shutting down assoc storage");
 
-		try {
-			if (store instanceof Closeable) {
-				((Closeable) store).close();
-			}
-			log.debug("Successfully closed storage: {}", id);
-		} catch (Exception e) {
-			log.error("Failed to close: {} ({})", id);
-			log.debug("Failure trace", e);
-		}
-	}
+        for (String id : storeManager.getConfiguredStores().keySet()) {
 
-	public static void main(String[] args) {
-		try {
-			new StorageService().start();
-		} catch (Throwable e) {
-			log.error("Unexpected storage failure", e);
-		}
-	}
+            try {
+                storeManager.flushStore(id);
+                log.debug("Successfully flushed assoc storage: {}", id);
+            } catch (Exception e) {
+                log.error("Failed to flush: {} ({}), trying to close", id);
+                log.debug("Failure trace", e);
+            }
+
+            try {
+                storeManager.closeStore(id);
+                log.debug("Successfully closed assoc storage: {}", id);
+            } catch (Exception e) {
+                log.error("Failed to close: {} ({})", id);
+                log.debug("Failure trace", e);
+            }
+        }
+
+        log.debug("Shutting down object storage");
+
+        ObjectStoreManager objectManager = storeManager.getObjectManager();
+
+        for (String id : objectManager.getObjectStores().keySet()) {
+
+            try {
+                objectManager.flushStore(id);
+                log.debug("Successfully flushed object storage: {}", id);
+            } catch (Exception e) {
+                log.error("Failed to flush: {} ({}), trying to close", id);
+                log.debug("Failure trace", e);
+            }
+
+            try {
+                objectManager.closeStore(id);
+                log.debug("Successfully closed object storage: {}", id);
+            } catch (Exception e) {
+                log.error("Failed to close: {} ({})", id);
+                log.debug("Failure trace", e);
+            }
+        }
+
+        // TODO PerformanceTimer
+        long time = System.currentTimeMillis() - before;
+        log.info("Shutdown completed in {} ms. Bye!", time);
+
+        // Shutting down RMI
+        Remote.shutdown();
+
+        running = false;
+    }
+
+    public static void main(String[] args) {
+
+        try {
+            new StorageService().start();
+        } catch (Throwable e) {
+            log.error("Unexpected storage failure", e);
+        }
+    }
 }

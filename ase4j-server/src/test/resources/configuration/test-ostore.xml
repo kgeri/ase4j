@@ -26,7 +26,7 @@
 
 	<!-- Object mapping for AssociationStoreImplTest -->
 	<store id="testAssocs">
-		<class name="org.ogreg.ase4j.file.FileAssociationStoreImplTest$TestData">
+		<class name="org.ogreg.ase4j.TestData">
 			<id name="url">
 				<index type="trie">
 					<parameter key="dictionary" value="URL" />

@@ -1,6 +1,7 @@
 package org.ogreg.ase4j.file;
 
 import org.ogreg.ase4j.Association;
+import org.ogreg.ase4j.TestData;
 import org.ogreg.ase4j.criteria.Query;
 import org.ogreg.ase4j.criteria.QueryExecutionException;
 import org.ogreg.ase4j.criteria.Restrictions;
@@ -57,7 +58,7 @@ public class FileAssociationStoreImplTest {
         ObjectStoreManager cfg = new ObjectStoreManager();
         cfg.add("configuration/test-ostore.xml");
 
-        ostore = cfg.createStore("testAssocs", FileTestSupport.createTempDir("store"));
+        ostore = cfg.getStore("testAssocs", FileTestSupport.createTempDir("store"));
     }
 
     @AfterMethod public void tearDown() {
@@ -369,11 +370,5 @@ public class FileAssociationStoreImplTest {
         td.length = length;
 
         return td;
-    }
-
-    static class TestData {
-        String url;
-        Date created;
-        long length;
     }
 }

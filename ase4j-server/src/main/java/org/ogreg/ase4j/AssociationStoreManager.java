@@ -1,139 +1,181 @@
 package org.ogreg.ase4j;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
 import org.ogreg.ase4j.file.FileAssociationStoreImpl;
+
 import org.ogreg.common.BaseJaxbManager;
 import org.ogreg.common.ConfigurationException;
+
 import org.ogreg.config.AssociationStorageConfig.Store;
 import org.ogreg.config.Associationstore;
+
 import org.ogreg.ostore.ObjectStore;
 import org.ogreg.ostore.ObjectStoreManager;
 
+import java.io.Closeable;
+import java.io.File;
+import java.io.Flushable;
+import java.io.IOException;
+
+import java.util.HashMap;
+import java.util.Map;
+
+
 /**
  * Association store configurator service.
- * <p>
- * The configuration XML resources must comply to associationstore.xsd
- * </p>
- * 
- * @author Gergely Kiss
+ *
+ * <p>The configuration XML resources must comply to associationstore.xsd</p>
+ *
+ * @author  Gergely Kiss
  */
 public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
-	/** The configurations for the different stores. */
-	private final Map<String, Store> configuredStores = new HashMap<String, Store>();
 
-	/** The configured and initialized object stores. */
-	private final Map<String, ObjectStore<?>> objectStores = new HashMap<String, ObjectStore<?>>();
+    /** The configurations for the different stores. */
+    private final Map<String, Store> configuredStores = new HashMap<String, Store>();
 
-	private final ObjectStoreManager objectStoreManager = new ObjectStoreManager();
+    /** The configured and initialized association stores. */
+    private final Map<String, AssociationStore<?, ?>> assocStores =
+        new HashMap<String, AssociationStore<?, ?>>();
 
-	/** The storage directory for object and association stores. */
-	private File dataDir;
+    /** The object store manager. */
+    private final ObjectStoreManager objectStoreManager = new ObjectStoreManager();
 
-	public AssociationStoreManager() {
-		super(Associationstore.class);
-	}
+    /** The storage directory for object and association stores. */
+    private File dataDir;
 
-	@Override
-	public void add(Associationstore config) throws ConfigurationException {
-		objectStoreManager.add(config.getObjects());
+    public AssociationStoreManager() {
+        super(Associationstore.class);
+    }
 
-		for (Store store : config.getAssociations().getStore()) {
-			configuredStores.put(store.getId(), store);
-		}
-	}
+    @Override public void add(Associationstore config) throws ConfigurationException {
+        objectStoreManager.add(config.getObjects());
 
-	/**
-	 * Creates and opens a new association store based on this configuration.
-	 * <p>
-	 * The object storage and other files will be created and opened.
-	 * </p>
-	 * 
-	 * @param id The id of the storage
-	 * @return A newly initialized {@link AssociationStore}
-	 * @throws ConfigurationException on storage init error
-	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public AssociationStore createStore(String id) {
-		// Checking for config
-		Store cfg = getStorageConfigFor(id);
+        for (Store store : config.getAssociations().getStore()) {
+            configuredStores.put(store.getId(), store);
+        }
+    }
 
-		// Creating the store
-		// TODO support more store types
-		ConfigurableAssociationStore store = new FileAssociationStoreImpl();
+    /**
+     * Creates and opens a new association store based on this configuration, or returns an already initialized assoc
+     * store instance.
+     *
+     * <p>The object storage and other files will be created and opened.</p>
+     *
+     * @param   id  The id of the storage
+     *
+     * @return  A newly initialized {@link AssociationStore}
+     *
+     * @throws  ConfigurationException  on storage init error
+     */
+    @SuppressWarnings("rawtypes")
+    public AssociationStore getStore(String id) {
+        AssociationStore<?, ?> store = assocStores.get(id);
 
-		// Initializing the store
-		ObjectStore from = getOrCreateStore(cfg.getFromStore());
-		ObjectStore to = getOrCreateStore(cfg.getToStore());
-		File storageFile = getAssociatonStoreFile(dataDir, id);
+        if (store != null) {
+            return store;
+        }
 
-		store.init(from, to, storageFile);
+        ConfigurableAssociationStore cstore = createStore(id);
+        assocStores.put(id, cstore);
 
-		return store;
-	}
+        return cstore;
+    }
 
-	/**
-	 * Returns all the configured association store ids.
-	 * 
-	 * @return
-	 */
-	public Set<String> getConfiguredStores() {
-		return configuredStores.keySet();
-	}
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    ConfigurableAssociationStore createStore(String id) {
 
-	/**
-	 * Returns the currently initialized object stores.
-	 * <p>
-	 * Note: should be called after at least one {@link #createStore(String)}.
-	 * </p>
-	 * 
-	 * @return
-	 */
-	public Map<String, ObjectStore<?>> getObjectStores() {
-		return objectStores;
-	}
+        // Checking for config
+        Store cfg = getStorageConfigFor(id);
 
-	@SuppressWarnings("rawtypes")
-	private ObjectStore getOrCreateStore(String id) {
-		ObjectStore store = objectStores.get(id);
+        // Creating the store
+        // TODO support more store types
+        ConfigurableAssociationStore store = new FileAssociationStoreImpl();
 
-		if (store == null) {
-			store = objectStoreManager.createStore(id, getObjectStoreFile(dataDir, id));
-			objectStores.put(id, store);
-		}
+        // Initializing the store
+        String frId = cfg.getFromStore();
+        String toId = cfg.getToStore();
 
-		return store;
-	}
+        ObjectStore from = objectStoreManager.getStore(frId, getObjectStoreFile(dataDir, frId));
+        ObjectStore to = objectStoreManager.getStore(toId, getObjectStoreFile(dataDir, toId));
+        File storageFile = getAssociatonStoreFile(dataDir, id);
 
-	private Store getStorageConfigFor(String id) throws ConfigurationException {
-		Store store = configuredStores.get(id);
+        store.init(from, to, storageFile);
 
-		if (store == null) {
-			throw new ConfigurationException("No association storage found for identifier: " + id
-					+ " Please check the configuration.");
-		}
+        return store;
+    }
 
-		return store;
-	}
+    /**
+     * Flushes the specified store.
+     *
+     * @param   id
+     *
+     * @throws  IOException  if the manager has failed to flush the store
+     */
+    public synchronized void flushStore(String id) throws IOException {
+        AssociationStore<?, ?> store = assocStores.get(id);
 
-	public void setDataDir(File dataDir) {
-		this.dataDir = dataDir;
-	}
+        if (store instanceof Flushable) {
+            ((Flushable) store).flush();
+        }
 
-	public static File getObjectStoreFile(File storageDir, String id) {
-		File dir = new File(storageDir, id);
+        assocStores.remove(id);
+    }
 
-		if (!dir.exists() && !dir.mkdirs()) {
-			throw new ConfigurationException("Failed to create storage dir: " + dir);
-		}
+    /**
+     * Closes the specified store and removes it from the store cache.
+     *
+     * @param   id
+     *
+     * @throws  IOException  if the manager has failed to close the store
+     */
+    public synchronized void closeStore(String id) throws IOException {
+        AssociationStore<?, ?> store = assocStores.get(id);
 
-		return dir;
-	}
+        if (store instanceof Closeable) {
+            ((Closeable) store).close();
+        }
 
-	public static File getAssociatonStoreFile(File storageDir, String id) {
-		return new File(storageDir, id);
-	}
+        assocStores.remove(id);
+    }
+
+    public ObjectStoreManager getObjectManager() {
+        return objectStoreManager;
+    }
+
+    /**
+     * Returns all the configured association store ids.
+     *
+     * @return
+     */
+    public Map<String, AssociationStore<?, ?>> getConfiguredStores() {
+        return assocStores;
+    }
+
+    private Store getStorageConfigFor(String id) throws ConfigurationException {
+        Store store = configuredStores.get(id);
+
+        if (store == null) {
+            throw new ConfigurationException("No association storage found for identifier: " + id +
+                " Please check the configuration.");
+        }
+
+        return store;
+    }
+
+    public void setDataDir(File dataDir) {
+        this.dataDir = dataDir;
+    }
+
+    public static File getObjectStoreFile(File storageDir, String id) {
+        File dir = new File(storageDir, id);
+
+        if (!dir.exists() && !dir.mkdirs()) {
+            throw new ConfigurationException("Failed to create storage dir: " + dir);
+        }
+
+        return dir;
+    }
+
+    public static File getAssociatonStoreFile(File storageDir, String id) {
+        return new File(storageDir, id);
+    }
 }

@@ -20,7 +20,9 @@ import org.ogreg.ostore.file.FileObjectStoreImpl;
 import org.ogreg.ostore.index.StringIndex;
 import org.ogreg.ostore.index.UniqueIndex;
 
+import java.io.Closeable;
 import java.io.File;
+import java.io.Flushable;
 import java.io.IOException;
 
 import java.util.HashMap;
@@ -52,12 +54,16 @@ public class ObjectStoreManager extends BaseJaxbManager<ObjectStorageConfig> {
     /** The configurations for the different stores. */
     private final Map<String, Store> configuredStores = new HashMap<String, Store>();
 
+    /** The configured and initialized object stores. */
+    private final Map<String, ObjectStore<?>> objectStores = new HashMap<String, ObjectStore<?>>();
+
     public ObjectStoreManager() {
         super(ObjectStorageConfig.class);
     }
 
     /**
-     * Creates and opens a new object store based on this configuration.
+     * Creates and opens a new object store based on this configuration, or returns an already initialized object store
+     * instance.
      *
      * <p>The property storage and other files will be created and opened.</p>
      *
@@ -68,8 +74,24 @@ public class ObjectStoreManager extends BaseJaxbManager<ObjectStorageConfig> {
      *
      * @throws  ConfigurationException  on storage init error
      */
+    @SuppressWarnings("rawtypes")
+    public synchronized ObjectStore getStore(String id, File storageDir)
+        throws ConfigurationException {
+        ObjectStore<?> store = objectStores.get(id);
+
+        if (store != null) {
+            return store;
+        }
+
+        ConfigurableObjectStore cstore = createStore(id, storageDir);
+        objectStores.put(id, cstore);
+
+        return cstore;
+    }
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public ObjectStore createStore(String id, File storageDir) throws ConfigurationException {
+    private ConfigurableObjectStore createStore(String id, File storageDir) {
+        ConfigurableObjectStore store;
 
         // Initializing the storage dir
         storageDir.mkdirs();
@@ -84,7 +106,7 @@ public class ObjectStoreManager extends BaseJaxbManager<ObjectStorageConfig> {
                                                                     : typeConfig.getParameter());
 
         // Creating the store
-        ConfigurableObjectStore store = createStore(typeConfig);
+        store = createStore(typeConfig);
 
         // Setting accessor based on store mode
         EntityAccessor accessor;
@@ -155,20 +177,6 @@ public class ObjectStoreManager extends BaseJaxbManager<ObjectStorageConfig> {
         return store;
     }
 
-    @Override public void add(ObjectStorageConfig config) throws ConfigurationException {
-        String packageName = config.getPackage();
-
-        if (packageName == null) {
-            packageName = "";
-        } else {
-            packageName += ".";
-        }
-
-        for (Store store : config.getStore()) {
-            configuredStores.put(store.getId(), store);
-        }
-    }
-
     @SuppressWarnings("rawtypes")
     private ConfigurableObjectStore createStore(InstanceTypeConfig config) {
         ConfigurableObjectStore store;
@@ -193,6 +201,65 @@ public class ObjectStoreManager extends BaseJaxbManager<ObjectStorageConfig> {
         }
 
         return store;
+    }
+
+    /**
+     * Flushes the specified store.
+     *
+     * @param   id
+     *
+     * @throws  IOException  if the manager has failed to flush the store
+     */
+    public synchronized void flushStore(String id) throws IOException {
+        ObjectStore<?> store = objectStores.get(id);
+
+        if (store instanceof Flushable) {
+            ((Flushable) store).flush();
+        }
+
+        objectStores.remove(id);
+    }
+
+    /**
+     * Closes the specified store and removes it from the store cache.
+     *
+     * @param   id
+     *
+     * @throws  IOException  if the manager has failed to close the store
+     */
+    public synchronized void closeStore(String id) throws IOException {
+        ObjectStore<?> store = objectStores.get(id);
+
+        if (store instanceof Closeable) {
+            ((Closeable) store).close();
+        }
+
+        objectStores.remove(id);
+    }
+
+    @Override public void add(ObjectStorageConfig config) throws ConfigurationException {
+        String packageName = config.getPackage();
+
+        if (packageName == null) {
+            packageName = "";
+        } else {
+            packageName += ".";
+        }
+
+        for (Store store : config.getStore()) {
+            configuredStores.put(store.getId(), store);
+        }
+    }
+
+    /**
+     * Returns the currently initialized object stores.
+     *
+     * <p>Note: should be called after at least one {@link #createStore(String)}.</p>
+     *
+     * @return
+     */
+    public Map<String, ObjectStore<?>> getObjectStores() {
+        return objectStores;
     }
 
     private Store getStorageConfigFor(String id) throws ConfigurationException {

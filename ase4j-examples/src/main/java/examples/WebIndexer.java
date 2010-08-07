@@ -74,7 +74,7 @@ public class WebIndexer {
         cfg.setDataDir(dataDir);
         cfg.add("store.xml");
 
-        store = cfg.createStore("index");
+        store = cfg.getStore("index");
 
         log.info("Stores initialized. Indexing: {}", url);
 

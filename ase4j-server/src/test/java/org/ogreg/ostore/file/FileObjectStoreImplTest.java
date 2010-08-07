@@ -17,9 +17,7 @@ import static org.testng.Assert.fail;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.Closeable;
 import java.io.File;
-import java.io.Flushable;
 import java.io.IOException;
 
 import java.util.Date;
@@ -54,7 +52,7 @@ public class FileObjectStoreImplTest {
      */
     @Test public void testAdd01() throws Exception {
         File dir = FileTestSupport.createTempDir("ostore");
-        store = config.createStore("test", dir);
+        store = config.getStore("test", dir);
 
         TestData d1 = data(1, "abc", new Date(3));
         TestData d2 = data(2, "def", new Date(5));
@@ -79,8 +77,8 @@ public class FileObjectStoreImplTest {
         assertEquals(store.get(2), d2);
 
         // Testing store reopen
-        ((Flushable) store).flush();
-        store = config.createStore("test", dir);
+        config.closeStore("test");
+        store = config.getStore("test", dir);
     }
 
     /**
@@ -88,7 +86,7 @@ public class FileObjectStoreImplTest {
      */
     @Test public void _testAdd02() throws Exception {
         File dir = FileTestSupport.createTempDir("ostoredyn");
-        dynstore = dynconfig.createStore("test", dir);
+        dynstore = dynconfig.getStore("test", dir);
 
         DynamicObject d1 = dyndata(1, "abc", new Date(3));
         DynamicObject d2 = dyndata(2, "def", new Date(5));
@@ -113,15 +111,15 @@ public class FileObjectStoreImplTest {
         assertEquals(dynstore.get(2), d2);
 
         // Testing store reopen
-        ((Flushable) dynstore).flush();
-        dynstore = dynconfig.createStore("test", dir);
+        config.closeStore("test");
+        dynstore = dynconfig.getStore("test", dir);
     }
 
     /**
      * Tests the put operation with the object store (and also the business key usage).
      */
     @Test public void testPut01() throws Exception {
-        store = config.createStore("test", FileTestSupport.createTempDir("ostore"));
+        store = config.getStore("test", FileTestSupport.createTempDir("ostore"));
 
         TestData d1 = data(1, "abc", new Date(3));
         TestData d2 = data(2, "def", new Date(5));
@@ -147,7 +145,7 @@ public class FileObjectStoreImplTest {
         assertEquals(store.get(d2key), d2);
 
         // Testing flush
-        ((Flushable) store).flush();
+        config.flushStore("test");
     }
 
     /**
@@ -155,7 +153,7 @@ public class FileObjectStoreImplTest {
      */
     @Test public void testPut02() throws Exception {
         File dir = FileTestSupport.createTempDir("ostore");
-        store = config.createStore("test", dir);
+        store = config.getStore("test", dir);
 
         TestData d1 = data(1, "abc", new Date(3));
         d1.putExt("EXT1", "aaa");
@@ -174,10 +172,10 @@ public class FileObjectStoreImplTest {
         assertEquals(store.get(1).getExt("EXT2"), new Date(0));
 
         // Testing flush and close
-        ((Flushable) store).flush();
-        ((Closeable) store).close();
+        config.flushStore("test");
+        config.closeStore("test");
 
-        store = config.createStore("test", dir);
+        store = config.getStore("test", dir);
 
         assertEquals(store.get(1).getExt("EXT1"), "aaa");
         assertEquals(store.get(1).getExt("EXT2"), new Date(0));
@@ -187,7 +185,7 @@ public class FileObjectStoreImplTest {
      * Tests the put operation with dynamic objects in the object store.
      */
     @Test public void testPut03() throws Exception {
-        dynstore = dynconfig.createStore("test", FileTestSupport.createTempDir("ostoredyn"));
+        dynstore = dynconfig.getStore("test", FileTestSupport.createTempDir("ostoredyn"));
 
         DynamicObject d1 = dyndata(1, "abc", new Date(3));
         DynamicObject d2 = dyndata(2, "def", new Date(5));
@@ -213,7 +211,7 @@ public class FileObjectStoreImplTest {
         assertEquals(dynstore.get(d2key), d2);
 
         // Testing flush
-        ((Flushable) dynstore).flush();
+        dynconfig.flushStore("test");
     }
 
     /**
@@ -221,7 +219,7 @@ public class FileObjectStoreImplTest {
      */
     @Test public void testGetField01() throws Exception {
         File dir = FileTestSupport.createTempDir("ostore");
-        store = config.createStore("test", dir);
+        store = config.getStore("test", dir);
 
         TestData d1 = data(1, "abc", new Date(3));
         d1.putExt("EXT1", "aaa");
@@ -239,7 +237,7 @@ public class FileObjectStoreImplTest {
 
         // No business key (though needed for save)
         try {
-            ObjectStore<Object> badStore = config.createStore("error",
+            ObjectStore<Object> badStore = config.getStore("error",
                     FileTestSupport.createTempDir("ostore"));
             badStore.save(new Object());
             fail("Expected IllegalStateException");
@@ -263,7 +261,7 @@ public class FileObjectStoreImplTest {
 
         // Unconfigured type
         try {
-            config.createStore("missing", FileTestSupport.createTempDir("ostore"));
+            config.getStore("missing", FileTestSupport.createTempDir("ostore"));
             fail("Expected ConfigurationException");
         } catch (ConfigurationException e) {
         }

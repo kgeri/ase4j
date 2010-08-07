@@ -5,7 +5,7 @@
 
 	<objects>
 		<store id="test">
-			<class name="org.ogreg.ase4j.file.FileAssociationStoreImplTest$TestData">
+			<class name="org.ogreg.ase4j.TestData">
 				<id name="url">
 					<index type="trie">
 						<parameter key="dictionary" value="URL" />
@@ -20,5 +20,8 @@
 
 	<associations>
 		<store id="test" fromStore="string" toStore="test" />
+		<store id="testHierarchical" fromStore="string" toStore="test" >
+			<instance type="org.ogreg.ase4j.HierarchicalAssociationStore" />
+		</store>
 	</associations>
 </associationstore>
