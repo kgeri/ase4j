@@ -26,4 +26,11 @@ public interface ConfigurableAssociationStore<F, T> extends AssociationStore<F, 
      * @param  storageFile  The storage data file (if file-based)
      */
     void init(ObjectStore<F> from, ObjectStore<T> to, File storageFile);
+
+    /**
+     * Sets the store's metadata.
+     *
+     * @param  metadata
+     */
+    void setMetadata(AssociationStoreMetadata metadata);
 }

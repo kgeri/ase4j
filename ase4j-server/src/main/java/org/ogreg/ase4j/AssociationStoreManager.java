@@ -4,9 +4,10 @@ import org.ogreg.ase4j.file.FileAssociationStoreImpl;
 
 import org.ogreg.common.BaseJaxbManager;
 import org.ogreg.common.ConfigurationException;
+import org.ogreg.common.utils.FileUtils;
 
-import org.ogreg.config.AssociationStorageConfig.Store;
 import org.ogreg.config.Associationstore;
+import org.ogreg.config.StoreConfig;
 
 import org.ogreg.ostore.ObjectStore;
 import org.ogreg.ostore.ObjectStoreManager;
@@ -30,11 +31,15 @@ import java.util.Map;
 public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
 
     /** The configurations for the different stores. */
-    private final Map<String, Store> configuredStores = new HashMap<String, Store>();
+    private final Map<String, StoreConfig> configuredStores = new HashMap<String, StoreConfig>();
 
     /** The configured and initialized association stores. */
     private final Map<String, AssociationStore<?, ?>> assocStores =
         new HashMap<String, AssociationStore<?, ?>>();
+
+    /** The configured grouped association stores. */
+    private final Map<String, GroupedAssociationStore<?, ?>> groupedStores =
+        new HashMap<String, GroupedAssociationStore<?, ?>>();
 
     /** The object store manager. */
     private final ObjectStoreManager objectStoreManager = new ObjectStoreManager();
@@ -49,7 +54,7 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
     @Override public void add(Associationstore config) throws ConfigurationException {
         objectStoreManager.add(config.getObjects());
 
-        for (Store store : config.getAssociations().getStore()) {
+        for (StoreConfig store : config.getAssociations().getStoreAndGroup()) {
             configuredStores.put(store.getId(), store);
         }
     }
@@ -74,33 +79,85 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
             return store;
         }
 
-        ConfigurableAssociationStore cstore = createStore(id);
+        ConfigurableAssociationStore cstore = createStore(id, getAssociatonStoreFile(dataDir, id));
+
         assocStores.put(id, cstore);
 
         return cstore;
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    ConfigurableAssociationStore createStore(String id) {
+    /**
+     * Creates and opens a new association store group based on this configuration, or returns an already initialized
+     * assoc store group instance.
+     *
+     * <p>The object storage and other files will be created and opened.</p>
+     *
+     * @param   id  The id of the group
+     *
+     * @return  A newly initialized {@link GroupedAssociationStore}
+     *
+     * @throws  ConfigurationException  on storage init error
+     */
+    @SuppressWarnings("rawtypes")
+    public GroupedAssociationStore getGroupedStore(String id) {
+        GroupedAssociationStore<?, ?> store = groupedStores.get(id);
+
+        if (store != null) {
+            return store;
+        }
 
         // Checking for config
-        Store cfg = getStorageConfigFor(id);
+        StoreConfig cfg = getStorageConfigFor(id);
+
+        // Creating the grouped store
+        GroupedAssociationStoreImpl gstore = new GroupedAssociationStoreImpl(this);
+
+        // Initializing the store
+        File groupDir = getGroupedStoreFile(dataDir, id);
+
+        try {
+            FileUtils.mkdirs(groupDir);
+        } catch (IOException e) {
+            throw new ConfigurationException(e);
+        }
+
+        gstore.init(id, groupDir);
+
+        // Setting metadata
+        ObjectStore from = getObjectStore(cfg.getFromStore());
+        ObjectStore to = getObjectStore(cfg.getToStore());
+        gstore.setMetadata(new AssociationStoreMetadata(from.getMetadata(), to.getMetadata()));
+
+        groupedStores.put(id, gstore);
+
+        return gstore;
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    ConfigurableAssociationStore createStore(String id, File storageFile) {
+
+        // Checking for config
+        StoreConfig cfg = getStorageConfigFor(id);
 
         // Creating the store
         // TODO support more store types
-        ConfigurableAssociationStore store = new FileAssociationStoreImpl();
+        ConfigurableAssociationStore cstore = new FileAssociationStoreImpl();
 
         // Initializing the store
-        String frId = cfg.getFromStore();
-        String toId = cfg.getToStore();
+        ObjectStore from = getObjectStore(cfg.getFromStore());
+        ObjectStore to = getObjectStore(cfg.getToStore());
 
-        ObjectStore from = objectStoreManager.getStore(frId, getObjectStoreFile(dataDir, frId));
-        ObjectStore to = objectStoreManager.getStore(toId, getObjectStoreFile(dataDir, toId));
-        File storageFile = getAssociatonStoreFile(dataDir, id);
+        cstore.init(from, to, storageFile);
 
-        store.init(from, to, storageFile);
+        // Setting metadata
+        cstore.setMetadata(new AssociationStoreMetadata(from.getMetadata(), to.getMetadata()));
 
-        return store;
+        return cstore;
+    }
+
+    @SuppressWarnings("rawtypes")
+    private ObjectStore getObjectStore(String id) {
+        return objectStoreManager.getStore(id, getObjectStoreFile(dataDir, id));
     }
 
     /**
@@ -111,13 +168,16 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
      * @throws  IOException  if the manager has failed to flush the store
      */
     public synchronized void flushStore(String id) throws IOException {
-        AssociationStore<?, ?> store = assocStores.get(id);
+        Object store = assocStores.get(id);
+        store = (store == null) ? groupedStores.get(id) : store;
 
         if (store instanceof Flushable) {
             ((Flushable) store).flush();
         }
 
         assocStores.remove(id);
+        groupedStores.remove(id);
+
     }
 
     /**
@@ -128,13 +188,15 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
      * @throws  IOException  if the manager has failed to close the store
      */
     public synchronized void closeStore(String id) throws IOException {
-        AssociationStore<?, ?> store = assocStores.get(id);
+        Object store = assocStores.get(id);
+        store = (store == null) ? groupedStores.get(id) : store;
 
         if (store instanceof Closeable) {
             ((Closeable) store).close();
         }
 
         assocStores.remove(id);
+        groupedStores.remove(id);
     }
 
     public ObjectStoreManager getObjectManager() {
@@ -150,8 +212,17 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
         return assocStores;
     }
 
-    private Store getStorageConfigFor(String id) throws ConfigurationException {
-        Store store = configuredStores.get(id);
+    /**
+     * Returns the storage configuration for the specified storage <code>id</code>.
+     *
+     * @param   id
+     *
+     * @return
+     *
+     * @throws  ConfigurationException  if the <code>id</code> is not configured
+     */
+    private StoreConfig getStorageConfigFor(String id) throws ConfigurationException {
+        StoreConfig store = configuredStores.get(id);
 
         if (store == null) {
             throw new ConfigurationException("No association storage found for identifier: " + id +
@@ -177,5 +248,9 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
 
     public static File getAssociatonStoreFile(File storageDir, String id) {
         return new File(storageDir, id);
+    }
+
+    public static File getGroupedStoreFile(File storageDir, String id) {
+        return new File(storageDir, "grp-" + id);
     }
 }

@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -102,7 +103,7 @@ public interface GroupedAssociationStore<F, T> {
     public static class Group {
 
         /** The multipliers used when accessing the stores, keyed by the store ids. */
-        private Map<String, Float> multiplier = new HashMap<String, Float>();
+        private Map<String, Float> multipliers = new HashMap<String, Float>();
 
         /**
          * Sets the <code>multiplier</code> for <code>storeId</code>.
@@ -110,8 +111,26 @@ public interface GroupedAssociationStore<F, T> {
          * @param  storeId
          * @param  multiplier
          */
-        public void set(String storeId, Float multiplier) {
-            this.multiplier.put(storeId, multiplier);
+        public void setMultiplier(String storeId, Float multiplier) {
+            this.multipliers.put(storeId, multiplier);
+        }
+
+        /**
+         * Returns the group identifiers to access.
+         *
+         * @return
+         */
+        public Set<String> getGroups() {
+            return multipliers.keySet();
+        }
+
+        /**
+         * Returns the group multipliers keyed by their group ids.
+         *
+         * @return
+         */
+        public Map<String, Float> getMultipliers() {
+            return multipliers;
         }
     }
 }

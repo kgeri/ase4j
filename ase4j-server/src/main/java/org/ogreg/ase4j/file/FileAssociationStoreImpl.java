@@ -82,9 +82,6 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 
             // Opening store at the specified file
             assocs.open(storageFile);
-
-            // Adjusting metadata
-            metadata = new AssociationStoreMetadata(fromStore.getMetadata(), toStore.getMetadata());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -237,5 +234,9 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 
     @Override public AssociationStoreMetadata getMetadata() {
         return metadata;
+    }
+
+    public void setMetadata(AssociationStoreMetadata metadata) {
+        this.metadata = metadata;
     }
 }

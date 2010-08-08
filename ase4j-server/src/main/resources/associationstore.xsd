@@ -21,24 +21,16 @@
 
 
 	<xsd:complexType name="AssociationStorageConfig">
-		<xsd:sequence>
+		<xsd:sequence maxOccurs="unbounded" minOccurs="1">
 			<xsd:element name="store" maxOccurs="unbounded"
-				minOccurs="1">
+				minOccurs="1" type="StoreConfig">
+			</xsd:element>
+			<xsd:element name="group" maxOccurs="unbounded" minOccurs="1">
 				<xsd:complexType>
-					<xsd:sequence>
-						<xsd:element name="instance"
-							type="InstanceTypeConfig" maxOccurs="1" minOccurs="0">
-						</xsd:element>
-					</xsd:sequence>
-					<xsd:attribute name="id" type="xsd:string"
-						use="required">
-					</xsd:attribute>
-					<xsd:attribute name="fromStore" type="xsd:string"
-						use="required">
-					</xsd:attribute>
-					<xsd:attribute name="toStore" type="xsd:string"
-						use="required">
-					</xsd:attribute>
+					<xsd:complexContent>
+						<xsd:extension base="StoreConfig">
+						</xsd:extension>
+					</xsd:complexContent>
 				</xsd:complexType>
 			</xsd:element>
 		</xsd:sequence>
@@ -46,4 +38,18 @@
 
     <xsd:attribute name="NewAttribute" type="xsd:string"></xsd:attribute>
 
+    <xsd:complexType name="StoreConfig">
+    	<xsd:sequence>
+    		<xsd:element minOccurs="0" maxOccurs="1" name="instance"
+    			type="InstanceTypeConfig">
+    		</xsd:element>
+    	</xsd:sequence>
+    	<xsd:attribute use="required" name="id" type="xsd:string"></xsd:attribute>
+    	<xsd:attribute use="required" name="fromStore"
+    		type="xsd:string">
+    	</xsd:attribute>
+    	<xsd:attribute use="required" name="toStore"
+    		type="xsd:string">
+    	</xsd:attribute>
+    </xsd:complexType>
 </xsd:schema>

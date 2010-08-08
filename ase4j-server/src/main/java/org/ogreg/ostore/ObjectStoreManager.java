@@ -2,6 +2,7 @@ package org.ogreg.ostore;
 
 import org.ogreg.common.BaseJaxbManager;
 import org.ogreg.common.ConfigurationException;
+import org.ogreg.common.utils.FileUtils;
 import org.ogreg.common.utils.PropertyUtils;
 
 import org.ogreg.config.BasePropertyConfig;
@@ -93,8 +94,13 @@ public class ObjectStoreManager extends BaseJaxbManager<ObjectStorageConfig> {
     private ConfigurableObjectStore createStore(String id, File storageDir) {
         ConfigurableObjectStore store;
 
-        // Initializing the storage dir
-        storageDir.mkdirs();
+        try {
+
+            // Initializing the storage dir
+            FileUtils.mkdirs(storageDir);
+        } catch (IOException e) {
+            throw new ConfigurationException(e);
+        }
 
         // Checking for config
         Store cfg = getStorageConfigFor(id);

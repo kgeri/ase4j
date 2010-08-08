@@ -105,6 +105,8 @@ public class DynamicObject implements Serializable {
         return fieldType.cast(value);
     }
 
+    // TODO Smarter equals based on id property
+
     @Override public int hashCode() {
         final int prime = 31;
         int result = 1;
