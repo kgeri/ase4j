@@ -2,6 +2,7 @@ package org.ogreg.ase4j.file;
 
 import org.ogreg.ase4j.Association;
 import org.ogreg.ase4j.TestData;
+import static org.ogreg.ase4j.TestData.*;
 import org.ogreg.ase4j.criteria.Query;
 import org.ogreg.ase4j.criteria.QueryExecutionException;
 import org.ogreg.ase4j.criteria.Restrictions;
@@ -361,14 +362,5 @@ public class FileAssociationStoreImplTest {
 
     <T> Association<String, T> assoc(String from, T to, float value) {
         return new Association<String, T>(from, to, value);
-    }
-
-    TestData data(String url, Date created, long length) {
-        TestData td = new TestData();
-        td.url = url;
-        td.created = created;
-        td.length = length;
-
-        return td;
     }
 }

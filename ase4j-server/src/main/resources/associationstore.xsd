@@ -8,12 +8,10 @@
 	<xsd:include schemaLocation="objectstore.xsd"></xsd:include>
 	<xsd:element name="associationstore">
 		<xsd:complexType>
-			<xsd:sequence>
-				<xsd:element name="objects" type="ObjectStorageConfig"
-					maxOccurs="1" minOccurs="0">
+            <xsd:sequence>
+				<xsd:element name="objects" type="ObjectStorageConfig" maxOccurs="1" minOccurs="0">
 				</xsd:element>
-				<xsd:element name="associations" type="AssociationStorageConfig"
-					maxOccurs="1" minOccurs="1">
+				<xsd:element name="associations" type="AssociationStorageConfig" maxOccurs="1" minOccurs="1">
 				</xsd:element>
 			</xsd:sequence>
 		</xsd:complexType>
@@ -21,11 +19,11 @@
 
 
 	<xsd:complexType name="AssociationStorageConfig">
-		<xsd:sequence maxOccurs="unbounded" minOccurs="1">
+		<xsd:sequence>
 			<xsd:element name="store" maxOccurs="unbounded"
-				minOccurs="1" type="StoreConfig">
+				minOccurs="0" type="StoreConfig">
 			</xsd:element>
-			<xsd:element name="group" maxOccurs="unbounded" minOccurs="1">
+			<xsd:element name="group" maxOccurs="unbounded" minOccurs="0">
 				<xsd:complexType>
 					<xsd:complexContent>
 						<xsd:extension base="StoreConfig">

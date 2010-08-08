@@ -16,12 +16,14 @@
 				<property name="length" />
 			</class>
 		</store>
+		<store id="string">
+			<class name="java.lang.String" />
+			<type type="org.ogreg.ostore.memory.StringStore" />
+		</store>
 	</objects>
 
 	<associations>
 		<store id="test" fromStore="string" toStore="test" />
-		<store id="testHierarchical" fromStore="string" toStore="test" >
-			<instance type="org.ogreg.ase4j.HierarchicalAssociationStore" />
-		</store>
+		<group id="testGroup" fromStore="string" toStore="test" />
 	</associations>
 </associationstore>

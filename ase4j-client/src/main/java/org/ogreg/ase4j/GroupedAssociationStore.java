@@ -3,6 +3,8 @@ package org.ogreg.ase4j;
 import org.ogreg.ase4j.criteria.Query;
 import org.ogreg.ase4j.criteria.QueryExecutionException;
 
+import java.io.Serializable;
+
 import java.rmi.RemoteException;
 
 import java.util.Collection;
@@ -100,19 +102,28 @@ public interface GroupedAssociationStore<F, T> {
      *
      * @author  Gergely Kiss
      */
-    public static class Group {
+    public static class Group implements Serializable {
+        private static final long serialVersionUID = 1158867616552676901L;
 
         /** The multipliers used when accessing the stores, keyed by the store ids. */
         private Map<String, Float> multipliers = new HashMap<String, Float>();
 
+        public Group(String id, float multiplier) {
+            multipliers.put(id, multiplier);
+        }
+
         /**
          * Sets the <code>multiplier</code> for <code>storeId</code>.
          *
-         * @param  storeId
-         * @param  multiplier
+         * @param   storeId
+         * @param   multiplier
+         *
+         * @return  This instance for method chaining
          */
-        public void setMultiplier(String storeId, Float multiplier) {
-            this.multipliers.put(storeId, multiplier);
+        public Group set(String storeId, float multiplier) {
+            this.multipliers.put(storeId, Float.valueOf(multiplier));
+
+            return this;
         }
 
         /**

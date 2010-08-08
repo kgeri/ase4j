@@ -54,7 +54,11 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
     @Override public void add(Associationstore config) throws ConfigurationException {
         objectStoreManager.add(config.getObjects());
 
-        for (StoreConfig store : config.getAssociations().getStoreAndGroup()) {
+        for (StoreConfig store : config.getAssociations().getStore()) {
+            configuredStores.put(store.getId(), store);
+        }
+
+        for (StoreConfig store : config.getAssociations().getGroup()) {
             configuredStores.put(store.getId(), store);
         }
     }
@@ -174,10 +178,6 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
         if (store instanceof Flushable) {
             ((Flushable) store).flush();
         }
-
-        assocStores.remove(id);
-        groupedStores.remove(id);
-
     }
 
     /**

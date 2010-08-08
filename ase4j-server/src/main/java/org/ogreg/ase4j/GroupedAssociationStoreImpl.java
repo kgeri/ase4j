@@ -3,7 +3,10 @@ package org.ogreg.ase4j;
 import org.ogreg.ase4j.criteria.Query;
 import org.ogreg.ase4j.criteria.QueryExecutionException;
 
+import java.io.Closeable;
 import java.io.File;
+import java.io.Flushable;
+import java.io.IOException;
 
 import java.rmi.RemoteException;
 
@@ -23,7 +26,8 @@ import java.util.Map.Entry;
  *
  * @author  Gergely Kiss
  */
-class GroupedAssociationStoreImpl<F, T> implements GroupedAssociationStore<F, T> {
+class GroupedAssociationStoreImpl<F, T> implements GroupedAssociationStore<F, T>, Flushable,
+    Closeable {
 
     /** The configured and initialized association stores. */
     private final Map<String, AssociationStore<F, T>> assocStores =
@@ -59,10 +63,6 @@ class GroupedAssociationStoreImpl<F, T> implements GroupedAssociationStore<F, T>
         for (Entry<String, Float> e : group.getMultipliers().entrySet()) {
             Float mul = e.getValue();
 
-            if (mul == null) {
-                continue;
-            }
-
             ensureStore(e.getKey()).add(from, to, value * mul);
         }
     }
@@ -73,14 +73,10 @@ class GroupedAssociationStoreImpl<F, T> implements GroupedAssociationStore<F, T>
         for (Entry<String, Float> e : group.getMultipliers().entrySet()) {
             Float mul = e.getValue();
 
-            if (mul == null) {
-                continue;
-            }
-
             // TODO rounding instability?
-            applyMultiplier(froms, e.getValue());
+            applyMultiplier(froms, mul);
             ensureStore(e.getKey()).addAll(froms, to);
-            applyMultiplier(froms, 1.0F / e.getValue());
+            applyMultiplier(froms, 1.0F / mul);
         }
     }
 
@@ -88,16 +84,12 @@ class GroupedAssociationStoreImpl<F, T> implements GroupedAssociationStore<F, T>
         throws AssociationStoreException, RemoteException {
 
         for (Entry<String, Float> e : group.getMultipliers().entrySet()) {
-            Float mul = e.getValue();
-
-            if (mul == null) {
-                continue;
-            }
+            float mul = e.getValue();
 
             // TODO rounding instability?
-            applyMultiplier(assocs, e.getValue());
+            applyMultiplier(assocs, mul);
             ensureStore(e.getKey()).addAll(assocs);
-            applyMultiplier(assocs, 1.0F / e.getValue());
+            applyMultiplier(assocs, 1.0F / mul);
         }
     }
 
@@ -108,13 +100,11 @@ class GroupedAssociationStoreImpl<F, T> implements GroupedAssociationStore<F, T>
                 .size() * query.limit());
 
         for (Entry<String, Float> e : group.getMultipliers().entrySet()) {
-            Float mul = e.getValue();
-
-            if (mul == null) {
-                continue;
-            }
+            float mul = e.getValue();
 
             List<Association<F, T>> results = ensureStore(e.getKey()).query(query);
+            applyMultiplier(results, mul);
+
             ret.addAll(results);
         }
 
@@ -150,5 +140,29 @@ class GroupedAssociationStoreImpl<F, T> implements GroupedAssociationStore<F, T>
 
     public void setMetadata(AssociationStoreMetadata metadata) {
         this.metadata = metadata;
+    }
+
+    @Override public void flush() throws IOException {
+
+        // TODO Error handling how?
+        for (AssociationStore<?, ?> store : assocStores.values()) {
+
+            if (store instanceof Flushable) {
+                ((Flushable) store).flush();
+            }
+        }
+    }
+
+    @Override public void close() throws IOException {
+
+        // TODO Error handling how?
+        for (AssociationStore<?, ?> store : assocStores.values()) {
+
+            if (store instanceof Closeable) {
+                ((Closeable) store).close();
+            }
+        }
+
+        assocStores.clear();
     }
 }

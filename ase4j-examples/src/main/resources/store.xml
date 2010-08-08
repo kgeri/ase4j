@@ -14,9 +14,7 @@
 		
 		<store id="subjects">
 			<class name="java.lang.String" />
-			<type type="org.ogreg.ostore.memory.StringStore">
-				<parameter key="dictionary" value="url"/>
-			</type>
+			<type type="org.ogreg.ostore.memory.StringStore" />
 		</store>
 	</objects>
 	
