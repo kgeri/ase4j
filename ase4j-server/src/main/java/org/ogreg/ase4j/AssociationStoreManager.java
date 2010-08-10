@@ -204,12 +204,21 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
     }
 
     /**
-     * Returns all the configured association store ids.
+     * Returns all the configured association stores.
      *
      * @return
      */
     public Map<String, AssociationStore<?, ?>> getConfiguredStores() {
         return assocStores;
+    }
+
+    /**
+     * Returns all the configured grouped association stores.
+     *
+     * @return
+     */
+    public Map<String, GroupedAssociationStore<?, ?>> getConfiguredGroupedStores() {
+        return groupedStores;
     }
 
     /**

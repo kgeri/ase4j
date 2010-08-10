@@ -33,7 +33,7 @@ public class Search {
 
         log.info("Looking up store...");
 
-        AssociationStore<String, DynamicObject> store = StorageClient.lookup(
+        AssociationStore<String, DynamicObject> store = StorageClient.lookupStore(
                 "//localhost:1198/assocs/index", String.class, DynamicObject.class);
 
         log.info("Store found. Searching for: {}", query);
