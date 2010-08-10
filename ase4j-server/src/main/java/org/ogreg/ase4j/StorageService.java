@@ -145,7 +145,7 @@ public class StorageService {
                         while (running) {
                             int b = System.in.read();
 
-                            if ((b < 0) || (b == 'q')) {
+                            if (b == 'q') {
                                 shutdown();
                             }
                         }
