@@ -12,8 +12,10 @@ import gnu.cajo.utils.ItemServer;
 import java.io.File;
 import java.io.IOException;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 
 /**
@@ -57,6 +59,7 @@ public class StorageService {
 
         // Publishing association storage
         log.debug("Configuring association storage");
+        storeManager.configureAll();
 
         int assocStores = 0;
 
@@ -77,6 +80,26 @@ public class StorageService {
 
         log.info("Initialized {}/{} assoc stores successfully", assocStores,
             storeManager.getConfiguredStores().size());
+
+        int groupedAssocStores = 0;
+
+        for (Entry<String, GroupedAssociationStore<?, ?>> en :
+            storeManager.getConfiguredGroupedStores().entrySet()) {
+            String serviceLoc = "groupedAssocs/" + en.getKey();
+
+            try {
+                ItemServer.bind(en.getValue(), serviceLoc);
+                groupedAssocStores++;
+                log.debug("Successfully initialized grouped assoc store at: {}", serviceLoc);
+            } catch (Exception e) {
+                log.error("Failed to initialize grouped assoc store: {} ({})", en.getKey(),
+                    e.getLocalizedMessage());
+                log.debug("Failure trace", e);
+            }
+        }
+
+        log.info("Initialized {}/{} grouped assoc stores successfully", groupedAssocStores,
+            storeManager.getConfiguredGroupedStores().size());
 
         // Publishing object storage
         log.debug("Configuring object storage");
@@ -151,7 +174,9 @@ public class StorageService {
 
         log.debug("Shutting down assoc storage");
 
-        for (String id : storeManager.getConfiguredStores().keySet()) {
+        Set<String> storeIds = new HashSet<String>(storeManager.getConfiguredStores().keySet());
+
+        for (String id : storeIds) {
 
             try {
                 storeManager.flushStore(id);
@@ -173,8 +198,9 @@ public class StorageService {
         log.debug("Shutting down object storage");
 
         ObjectStoreManager objectManager = storeManager.getObjectManager();
+        Set<String> objectStoreIds = new HashSet<String>(objectManager.getObjectStores().keySet());
 
-        for (String id : objectManager.getObjectStores().keySet()) {
+        for (String id : objectStoreIds) {
 
             try {
                 objectManager.flushStore(id);

@@ -6,6 +6,7 @@ import org.ogreg.common.BaseJaxbManager;
 import org.ogreg.common.ConfigurationException;
 import org.ogreg.common.utils.FileUtils;
 
+import org.ogreg.config.AssociationStorageConfig.Group;
 import org.ogreg.config.Associationstore;
 import org.ogreg.config.StoreConfig;
 
@@ -19,6 +20,7 @@ import java.io.IOException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 
 /**
@@ -60,6 +62,25 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
 
         for (StoreConfig store : config.getAssociations().getGroup()) {
             configuredStores.put(store.getId(), store);
+        }
+    }
+
+    /**
+     * Configures and initializes all of the association storage.
+     *
+     * @throws  ConfigurationException  on storage init error
+     *
+     * @see     #getConfiguredStores() and {@link #getConfiguredGroupedStores()}
+     */
+    public void configureAll() {
+
+        for (Entry<String, StoreConfig> e : configuredStores.entrySet()) {
+
+            if (e.getValue() instanceof Group) {
+                getGroupedStore(e.getKey());
+            } else {
+                getStore(e.getKey());
+            }
         }
     }
 

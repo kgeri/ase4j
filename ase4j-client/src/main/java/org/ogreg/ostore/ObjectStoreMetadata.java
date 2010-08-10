@@ -2,13 +2,17 @@ package org.ogreg.ostore;
 
 import org.ogreg.common.dynamo.DynamicType;
 
+import java.io.Serializable;
+
 
 /**
  * Object store description and schema information.
  *
  * @author  Gergely Kiss
  */
-public class ObjectStoreMetadata {
+public class ObjectStoreMetadata implements Serializable {
+    private static final long serialVersionUID = 4510331494411649651L;
+
     private final Class<?> staticType;
     private final DynamicType dynamicType;
 

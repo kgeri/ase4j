@@ -46,7 +46,7 @@ public class StringStore implements ConfigurableObjectStore<String>, Serializabl
     private transient File storageFile;
 
     /** Storage metadata. */
-    private ObjectStoreMetadata metadata;
+    private transient ObjectStoreMetadata metadata;
 
     @Override public synchronized void init(EntityAccessor accessor, File storageDir,
         Map<String, String> params) {
