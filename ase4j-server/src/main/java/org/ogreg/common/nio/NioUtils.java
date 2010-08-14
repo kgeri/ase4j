@@ -217,6 +217,25 @@ public abstract class NioUtils {
 	}
 
 	/**
+	 * Reads an integer from the channel at its current position.
+	 * <p>
+	 * Increments the position by 4.
+	 * </p>
+	 * 
+	 * @param channel
+	 * @return
+	 * @throws IOException
+	 */
+	public static final int readInt(FileChannel channel) throws IOException {
+		ByteBuffer singleIntBuf = ByteBuffer.allocate(4);
+
+		channel.read(singleIntBuf);
+		singleIntBuf.flip();
+
+		return singleIntBuf.getInt();
+	}
+
+	/**
 	 * Reads an integer from the channel at the specified position.
 	 * 
 	 * @param channel
@@ -231,6 +250,25 @@ public abstract class NioUtils {
 		singleIntBuf.flip();
 
 		return singleIntBuf.getInt();
+	}
+
+	/**
+	 * Writes an integer to the channel at its current position.
+	 * <p>
+	 * Increments the position by 4.
+	 * </p>
+	 * 
+	 * @param channel
+	 * @param value
+	 * @throws IOException
+	 */
+	public static final void writeInt(FileChannel channel, int value) throws IOException {
+		ByteBuffer singleIntBuf = ByteBuffer.allocate(4);
+
+		singleIntBuf.putInt(value);
+		singleIntBuf.flip();
+
+		channel.write(singleIntBuf);
 	}
 
 	/**
@@ -253,12 +291,9 @@ public abstract class NioUtils {
 
 	/**
 	 * Serializes the <code>object</code> to the given <code>channel</code>
-	 * using Java serialization.
+	 * using {@link NioSerializer}s.
 	 * <p>
-	 * Note: The channel must be positioned first. Since Java serialization does
-	 * not store the total size of the object, the first 4 bytes of the byte
-	 * block will be used to store the serialized size in bytes (excluding that
-	 * 4 bytes). The channel position will be incremented.
+	 * Note: The channel must be positioned first.
 	 * </p>
 	 * 
 	 * @param channel
@@ -281,7 +316,7 @@ public abstract class NioUtils {
 
 	/**
 	 * Deserializes an object of <code>type</code> from the given
-	 * <code>channel</code> using Java deserialization.
+	 * <code>channel</code> using {@link NioSerializer}.
 	 * <p>
 	 * Note: The channel must be positioned first. Only byte arrays serialized
 	 * with {@link #serializeTo(FileChannel, Object)} can be deserialized. The

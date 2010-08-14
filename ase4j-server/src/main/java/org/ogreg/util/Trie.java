@@ -4,126 +4,143 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-
 /**
  * A fast and memory efficient Trie data structure.
- *
- * <p>It differs from the original implementation in that it stores String prefixes instead of characters. Also, the
- * prefixes are stored in a very efficient encoded format: every character of a prefix String is mapped to its index and
- * stored in a byte array. The mapping is done exactly once, before an insertion or a search.</p>
- *
- * <p>The storage of the mapped byte arrays is similar to Java's String implementation - whenever a byte array needs to
- * be split, only its offset and/or length field will be modified.</p>
- *
- * <p>Thanks to these optimizations, the Trie is only 5 times slower than a HashMap (both insertion and search), and
- * allocates only about 1.5 times the memory (based on random string insertions, real life scenarios such as URL sets
- * may provide better results).</p>
- *
- * <p>Please note that you must provide a {@link TrieDictionary} to use this data structure, by default the {@link
- * TrieDictionary#ENGLISH} is specified.</p>
- *
- * <p>Please note that this implementation currently does not support deletion.</p>
- *
- * @author  Gergely Kiss
- * @see     http://en.wikipedia.org/wiki/Trie
- * @see     TrieDictionary
+ * <p>
+ * It differs from the original implementation in that it stores String prefixes
+ * instead of characters. Also, the prefixes are stored in a very efficient
+ * encoded format: every character of a prefix String is mapped to its index and
+ * stored in a byte array. The mapping is done exactly once, before an insertion
+ * or a search.
+ * </p>
+ * <p>
+ * The storage of the mapped byte arrays is similar to Java's String
+ * implementation - whenever a byte array needs to be split, only its offset
+ * and/or length field will be modified.
+ * </p>
+ * <p>
+ * Thanks to these optimizations, the Trie is only 5 times slower than a HashMap
+ * (both insertion and search), and allocates only about 1.5 times the memory
+ * (based on random string insertions, real life scenarios such as URL sets may
+ * provide better results).
+ * </p>
+ * <p>
+ * Please note that you must provide a {@link TrieDictionary} to use this data
+ * structure, by default the {@link TrieDictionary#ENGLISH} is specified.
+ * </p>
+ * <p>
+ * Please note that this implementation currently does not support deletion.
+ * </p>
+ * <p>
+ * Please note that despite this implementation is {@link Serializable}, it may
+ * be ineffective to use Java Serialization for loading and saving {@link Trie}
+ * s. For a fast, NIO-based solution please see {@link TrieSerializer}.
+ * </p>
+ * 
+ * @author Gergely Kiss
+ * @see http://en.wikipedia.org/wiki/Trie
+ * @see TrieDictionary
  */
 public class Trie<T> implements Serializable {
-    private static final long serialVersionUID = 8556320988440764488L;
+	private static final long serialVersionUID = 8556320988440764488L;
 
-    final TrieDictionary dict;
-    TrieNode<T> root;
+	final TrieDictionary dict;
+	TrieNode<T> root;
 
-    /**
-     * Creates a Trie based on the English dictionary.
-     */
-    public Trie() {
-        this(TrieDictionary.ENGLISH);
-    }
+	/**
+	 * Creates a Trie based on the English dictionary.
+	 */
+	public Trie() {
+		this(TrieDictionary.ENGLISH);
+	}
 
-    /**
-     * Creates a Trie based on the specified dictionary.
-     *
-     * @param  dict
-     */
-    public Trie(TrieDictionary dict) {
-        this.dict = dict;
-        this.root = new TrieNode<T>(new byte[0], dict.size(), null);
-    }
+	/**
+	 * Creates a Trie based on the specified dictionary.
+	 * 
+	 * @param dict
+	 */
+	public Trie(TrieDictionary dict) {
+		this.dict = dict;
+		this.root = new TrieNode<T>(new byte[0], dict.size(), null);
+	}
 
-    /**
-     * Sets the given value to the word in the trie.
-     *
-     * @param  word
-     */
-    public void set(String word, T value) {
+	/**
+	 * Sets the given value to the word in the trie.
+	 * 
+	 * @param word
+	 */
+	public void set(String word, T value) {
 
-        if ((word == null) || (word.length() == 0)) {
-            return;
-        }
+		if ((word == null) || (word.length() == 0)) {
+			return;
+		}
 
-        TrieNode<T> node = new TrieNode<T>(dict.encode(word), dict.size(), value);
-        root.set(node, 0, value);
-    }
+		TrieNode<T> node = new TrieNode<T>(dict.encode(word), dict.size(), value);
+		root.set(node, 0, value);
+	}
 
-    /**
-     * Sets the given value to the encoded word in the trie.
-     *
-     * @param  word
-     */
-    public void set(byte[] word, T value) {
+	/**
+	 * Sets the given value to the encoded word in the trie.
+	 * 
+	 * @param word
+	 */
+	public void set(byte[] word, T value) {
 
-        if ((word == null) || (word.length == 0)) {
-            return;
-        }
+		if ((word == null) || (word.length == 0)) {
+			return;
+		}
 
-        TrieNode<T> node = new TrieNode<T>(word, dict.size(), value);
-        root.set(node, 0, value);
-    }
+		TrieNode<T> node = new TrieNode<T>(word, dict.size(), value);
+		root.set(node, 0, value);
+	}
 
-    /**
-     * Returns the value associated with the given word, or null of there is no such association.
-     *
-     * @param   word
-     *
-     * @return
-     */
-    public T get(String word) {
+	/**
+	 * Returns the value associated with the given word, or null of there is no
+	 * such association.
+	 * 
+	 * @param word
+	 * @return
+	 */
+	public T get(String word) {
 		byte[] bytes = dict.encode(word);
 
-        return root.get(bytes, 0, bytes.length);
-    }
+		return root.get(bytes, 0, bytes.length);
+	}
 
-    /**
-     * Returns all the words in the trie.
-     *
-     * @return
-     */
-    public List<String> getWords() {
-        List<String> ret = new ArrayList<String>();
-        getWords("", root, ret);
+	/**
+	 * Returns all the words in the trie.
+	 * 
+	 * @return
+	 */
+	public List<String> getWords() {
+		List<String> ret = new ArrayList<String>();
+		getWords("", root, ret);
 
-        return ret;
-    }
+		return ret;
+	}
 
-    private void getWords(String prefix, TrieNode<T> node, List<String> dest) {
-        String value = prefix + dict.decode(node.prefix, node.offset, node.count);
+	public TrieDictionary getDictionary() {
+		return dict;
+	}
 
-        if (node.value != null) {
-            dest.add(value);
-        }
+	private void getWords(String prefix, TrieNode<T> node, List<String> dest) {
+		String value = prefix + dict.decode(node.prefix, node.offset, node.count);
 
-        TrieNode<T>[] children = node.children;
+		if (node.value != null) {
+			dest.add(value);
+		}
 
-        if (children == null) {
-            return;
-        }
+		TrieNode<T>[] children = node.children;
 
-        for (int i = 0; i < children.length; i++) {
+		if (children == null) {
+			return;
+		}
 
-            if (children[i] != null) {
-                getWords(value, children[i], dest);
-            }
-        }
-    }
+		for (int i = 0; i < children.length; i++) {
+
+			if (children[i] != null) {
+				getWords(value, children[i], dest);
+			}
+		}
+	}
 }

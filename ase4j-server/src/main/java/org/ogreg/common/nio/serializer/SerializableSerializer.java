@@ -16,6 +16,17 @@ import org.ogreg.common.nio.NioUtils;
 
 /**
  * {@link NioSerializer} for {@link Serializable} types.
+ * <p>
+ * Implementation for storing any {@link Serializable} Java type using NIO.
+ * </p>
+ * <p>
+ * Please note that it's mostly for convenience, dedicated {@link NioSerializer}
+ * s may be much faster.
+ * </p>
+ * <p>
+ * Please also note that the size of the Java object is also stored (so the
+ * serialized image will actually be 4 bytes larger).
+ * </p>
  * 
  * @author Gergely Kiss
  */

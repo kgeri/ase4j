@@ -22,121 +22,137 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 /**
  * A generic, file-based implementation of the {@link ObjectStore} interface.
- *
- * <p>The objects are stored with their properties, in different files. Please see {@link ObjectStore} for further
- * documentation.</p>
- *
- * @author  Gergely Kiss
+ * <p>
+ * The objects are stored with their properties, in different files. Please see
+ * {@link ObjectStore} for further documentation.
+ * </p>
+ * 
+ * @author Gergely Kiss
  */
 public class FileObjectStoreImpl<T> extends BaseObjectStore<T> {
 
-    /** The storage dir of this Object Store. */
-    private File storageDir;
+	/** The storage dir of this Object Store. */
+	private File storageDir;
 
-    /** The "sequence generator". */
-    private AtomicInteger nextKey;
+	/** The "sequence generator". */
+	private AtomicInteger nextKey;
 
-    /** Storage metadata. */
-    private ObjectStoreMetadata metadata;
+	/** Storage metadata. */
+	private ObjectStoreMetadata metadata;
 
-    @Override protected long getNextId() {
-        return Long.valueOf(nextKey.incrementAndGet());
-    }
+	@Override
+	protected long getNextId() {
+		return nextKey.incrementAndGet();
+	}
 
-    @Override public void init(EntityAccessor accessor, File storageDir,
-        Map<String, String> params) {
-        super.init(accessor, storageDir, params);
-        this.storageDir = storageDir;
+	@Override
+	protected void updateMaxId(long identifier) {
+		// Does not guarantee that every identifier is always assigned, but
+		// is threadsafe
+		int diff = (int) (identifier - nextKey.get());
+		if (diff > 0) {
+			nextKey.addAndGet(diff);
+		}
+	}
 
-        try {
-            nextKey = SerializationUtils.read(ObjectStoreManager.getSequenceFile(storageDir),
-                    AtomicInteger.class);
-        } catch (IOException e) {
-            nextKey = new AtomicInteger();
-        }
-    }
+	@Override
+	public void init(EntityAccessor accessor, File storageDir, Map<String, String> params) {
+		super.init(accessor, storageDir, params);
+		this.storageDir = storageDir;
 
-    @Override public void flush() throws IOException {
-        SerializationUtils.write(ObjectStoreManager.getSequenceFile(storageDir), nextKey);
+		try {
+			nextKey = SerializationUtils.read(ObjectStoreManager.getSequenceFile(storageDir),
+					AtomicInteger.class);
+		} catch (IOException e) {
+			nextKey = new AtomicInteger();
+		}
+	}
 
-        super.flush();
-    }
+	@Override
+	public void flush() throws IOException {
+		SerializationUtils.write(ObjectStoreManager.getSequenceFile(storageDir), nextKey);
 
-    @Override protected void flushUniqueIndex(String propertyName, UniqueIndex index)
-        throws IOException {
-        index.saveTo(ObjectStoreManager.getIndexFile(storageDir, propertyName));
-    }
+		super.flush();
+	}
 
-    @Override
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    protected FilePropertyPersistor createPersistor(Class<?> propertyType, String propertyName) {
+	@Override
+	protected void flushUniqueIndex(String propertyName, UniqueIndex index) throws IOException {
+		index.saveTo(ObjectStoreManager.getIndexFile(storageDir, propertyName));
+	}
 
-        try {
+	@Override
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	protected FilePropertyPersistor createPersistor(Class<?> propertyType, String propertyName) {
 
-            // TODO Custom config for serializers (through property type)
-            NioSerializer<?> s = SerializerManager.findSerializerFor(propertyType);
+		try {
 
-            FilePropertyStore pstore = new FilePropertyStore();
-            pstore.setType(propertyType);
-            pstore.setSerializer(s);
-            pstore.open(ObjectStoreManager.getPropertyFile(storageDir, propertyName));
+			// TODO Custom config for serializers (through property type)
+			NioSerializer<?> s = SerializerManager.findSerializerFor(propertyType);
 
-            // TODO Indices for properties
+			FilePropertyStore pstore = new FilePropertyStore();
+			pstore.setType(propertyType);
+			pstore.setSerializer(s);
+			pstore.open(ObjectStoreManager.getPropertyFile(storageDir, propertyName));
 
-            return new FilePropertyPersistor(pstore);
-        } catch (IOException e) {
-            throw new ConfigurationException(e);
-        }
-    }
+			// TODO Indices for properties
 
-    @Override
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    protected PropertyPersistor createExtensionPersistor(String propertyName) {
-        final Pattern extPattern = ObjectStoreManager.getExtensionFileNamePattern(propertyName);
+			return new FilePropertyPersistor(pstore);
+		} catch (IOException e) {
+			throw new ConfigurationException(e);
+		}
+	}
 
-        File[] extStoreFiles = storageDir.listFiles(new FilenameFilter() {
-                    @Override public boolean accept(File dir, String name) {
-                        return extPattern.matcher(name).matches();
-                    }
-                });
+	@Override
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	protected PropertyPersistor createExtensionPersistor(String propertyName) {
+		final Pattern extPattern = ObjectStoreManager.getExtensionFileNamePattern(propertyName);
 
-        FileExtensionPersistor persistor = new FileExtensionPersistor(propertyName, storageDir);
+		File[] extStoreFiles = storageDir.listFiles(new FilenameFilter() {
+			@Override
+			public boolean accept(File dir, String name) {
+				return extPattern.matcher(name).matches();
+			}
+		});
 
-        if ((extStoreFiles != null) && (extStoreFiles.length > 0)) {
+		FileExtensionPersistor persistor = new FileExtensionPersistor(propertyName, storageDir);
 
-            try {
+		if ((extStoreFiles != null) && (extStoreFiles.length > 0)) {
 
-                for (File extStore : extStoreFiles) {
-                    Matcher m = extPattern.matcher(extStore.getName());
+			try {
 
-                    if (m.matches()) {
-                        String ename = m.group(1);
+				for (File extStore : extStoreFiles) {
+					Matcher m = extPattern.matcher(extStore.getName());
 
-                        // Typeless PropertyStore init (opening the store initializes the type)
-                        FilePropertyStore pstore = new FilePropertyStore();
-                        pstore.open(extStore);
-                        pstore.setSerializer(SerializerManager.findSerializerFor(pstore.getType()));
+					if (m.matches()) {
+						String ename = m.group(1);
 
-                        persistor.addPersistor(ename,
-                            new FileExtensionPersistor.ValuePersistor(pstore));
-                    }
-                }
-            } catch (IOException e) {
-                throw new ConfigurationException(e);
-            }
-        }
+						// Typeless PropertyStore init (opening the store
+						// initializes the type)
+						FilePropertyStore pstore = new FilePropertyStore();
+						pstore.open(extStore);
+						pstore.setSerializer(SerializerManager.findSerializerFor(pstore.getType()));
 
-        return persistor;
-    }
+						persistor.addPersistor(ename, new FileExtensionPersistor.ValuePersistor(
+								pstore));
+					}
+				}
+			} catch (IOException e) {
+				throw new ConfigurationException(e);
+			}
+		}
 
-    @Override public ObjectStoreMetadata getMetadata() {
-        return metadata;
-    }
+		return persistor;
+	}
 
-    @Override public void setMetadata(ObjectStoreMetadata metadata) {
-        this.metadata = metadata;
-    }
+	@Override
+	public ObjectStoreMetadata getMetadata() {
+		return metadata;
+	}
+
+	@Override
+	public void setMetadata(ObjectStoreMetadata metadata) {
+		this.metadata = metadata;
+	}
 }

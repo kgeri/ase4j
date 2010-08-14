@@ -38,9 +38,9 @@ public class TrieDictionary implements Serializable {
 	public static final TrieDictionary URL = new TrieDictionary(
 			" abcdefghijklmnopqrstuvwxyz0123456789:/.?#&=%!+-_,", " ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
-	private final byte size;
-	private final char[] code2char;
-	private final byte[] char2code;
+	private byte size;
+	private char[] code2char;
+	private byte[] char2code;
 
 	/**
 	 * Creates a Trie dictionary based on the characters.
