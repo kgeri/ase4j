@@ -36,7 +36,7 @@ import org.ogreg.common.nio.serializer.SerializerManager;
  * </p>
  * <p>
  * Please note that the buffer limit is currently 4096 bytes, so trying to
- * serialize keys or values larger than that will throw a
+ * serialize keys and values larger than that will throw a
  * {@link BufferOverflowException}. This is by design. Tries are not meant to
  * store such huge strings or values, please use an
  * {@link org.ogreg.ostore.ObjectStore} for that.
@@ -52,12 +52,8 @@ public class TrieSerializer<T> {
 	/** The serializer for the trie's values. */
 	private final NioSerializer<T> valueSerializer;
 
-	/** The type of the values stored in the trie. */
-	private final Class<T> valueType;
-
 	public TrieSerializer(Class<T> valueType) {
 		this.valueSerializer = SerializerManager.findSerializerFor(valueType);
-		this.valueType = valueType;
 	}
 
 	/**
@@ -132,7 +128,10 @@ public class TrieSerializer<T> {
 
 		while (src.position() < len) {
 			// Reading key length
-			int n = NioUtils.readInt(src);
+			buf.clear().limit(4);
+			src.read(buf);
+			buf.flip();
+			int n = buf.getInt();
 
 			// Reading key
 			byte[] key = new byte[n];
@@ -140,7 +139,10 @@ public class TrieSerializer<T> {
 			src.read(keyBuf);
 
 			// Reading value
-			T value = NioUtils.deserializeFrom(src, valueType);
+			buf.clear().limit(valueSerializer.sizeOf(src, src.position()));
+			src.read(buf);
+			buf.flip();
+			T value = valueSerializer.deserialize(buf);
 
 			// Adding trie entry
 			trie.set(key, value);
@@ -165,34 +167,28 @@ public class TrieSerializer<T> {
 	 */
 	private synchronized void write(TrieNodes prefix, TrieNode<T> node, FileChannel dest)
 			throws IOException {
+		buf.clear();
+
 		// Writing key length
 		int n = 0;
 		for (int i = 0; i < prefix.size; i++) {
 			n += prefix.nodes[i].count;
 		}
 		n += node.count;
-		NioUtils.writeInt(dest, n);
+		buf.putInt(n);
 
 		// Writing key
 		for (int i = 0; i < prefix.size; i++) {
 			TrieNode<?> pn = prefix.nodes[i];
-
-			buf.clear();
 			buf.put(pn.prefix, pn.offset, pn.count);
-			buf.flip().limit(pn.count);
-			dest.write(buf);
 		}
-
-		buf.clear();
 		buf.put(node.prefix, node.offset, node.count);
-		buf.flip().limit(node.count);
-		dest.write(buf);
 
 		// Writing value
 		int m = valueSerializer.sizeOf(node.value);
-		buf.clear();
 		valueSerializer.serialize(node.value, buf);
-		buf.flip().limit(m);
+
+		buf.flip().limit(4 + n + m);
 		dest.write(buf);
 	}
 
