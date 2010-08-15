@@ -206,11 +206,11 @@ public class StringStore implements ConfigurableObjectStore<String>, Serializabl
 
 			TrieSerializer<Integer> serializer = new TrieSerializer<Integer>(Integer.class);
 			serializer.serialize(toInt, channel);
-
-			FileUtils.renameTo(tmp, storageFile);
 		} finally {
 			NioUtils.closeQuietly(channel);
-			tmp.delete();
 		}
+
+		FileUtils.renameTo(tmp, storageFile);
+		tmp.delete();
 	}
 }
