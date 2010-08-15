@@ -104,11 +104,11 @@ public class TrieTest {
 		} catch (IllegalArgumentException e) {
 		}
 
-		TrieDictionary.ENGLISH.toString();
+		TrieDictionary.EN.toString();
 
-		TrieDictionary.ENGLISH.encode("á");
+		TrieDictionary.EN.encode("á");
 
-		new Trie<Integer>().set(TrieDictionary.ENGLISH.encode("aaa"), 0);
+		new Trie<Integer>().set(TrieDictionary.EN.encode("aaa"), 0);
 
 		new Trie<Integer>().set("", 0);
 

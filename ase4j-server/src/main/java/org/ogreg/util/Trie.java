@@ -26,7 +26,7 @@ import java.util.List;
  * </p>
  * <p>
  * Please note that you must provide a {@link TrieDictionary} to use this data
- * structure, by default the {@link TrieDictionary#ENGLISH} is specified.
+ * structure, by default the {@link TrieDictionary#EN} is specified.
  * </p>
  * <p>
  * Please note that this implementation currently does not support deletion.
@@ -51,7 +51,7 @@ public class Trie<T> implements Serializable {
 	 * Creates a Trie based on the English dictionary.
 	 */
 	public Trie() {
-		this(TrieDictionary.ENGLISH);
+		this(TrieDictionary.EN);
 	}
 
 	/**

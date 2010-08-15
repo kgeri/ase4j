@@ -18,11 +18,26 @@ public class TrieDictionary implements Serializable {
 	 * 
 	 * <pre>
 	 *         abcdefghijklmnopqrstuvwxyz0123456789
-	 *         ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
+	 *         ABCDEFGHIJKLMNOPQRSTUVWXYZ
 	 * </pre>
 	 */
-	public static final TrieDictionary ENGLISH = new TrieDictionary(
+	public static final TrieDictionary EN = new TrieDictionary(
 			" abcdefghijklmnopqrstuvwxyz0123456789", " ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+
+	/**
+	 * The case insensitive Hungarian basic dictionary.
+	 * <p>
+	 * The mapping is as follows (unknown characters are mapped to ' '):
+	 * </p>
+	 * 
+	 * <pre>
+	 *         aábcdeéfghiíjklmnoóöőpqrstuúüűvwxyz0123456789
+	 *         AÁBCDEÉFGHIÍJKLMNOÓÖŐPQRSTUÚÜŰVWXYZ
+	 * </pre>
+	 */
+	public static final TrieDictionary HU = new TrieDictionary(
+			" aábcdeéfghiíjklmnoóöőpqrstuúüűvwxyz0123456789",
+			" AÁBCDEÉFGHIÍJKLMNOÓÖŐPQRSTUÚÜŰVWXYZ");
 
 	/**
 	 * The case insensitive English basic dictionary for URLs.
@@ -32,7 +47,7 @@ public class TrieDictionary implements Serializable {
 	 * 
 	 * <pre>
 	 *         abcdefghijklmnopqrstuvwxyz0123456789:/.?#&=%!+-_,
-	 *         ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
+	 *         ABCDEFGHIJKLMNOPQRSTUVWXYZ
 	 * </pre>
 	 */
 	public static final TrieDictionary URL = new TrieDictionary(
@@ -169,9 +184,13 @@ public class TrieDictionary implements Serializable {
 		if ("url".equalsIgnoreCase(name)) {
 			return TrieDictionary.URL;
 		}
+		// Hungarian dictionary
+		if ("hu".equalsIgnoreCase(name)) {
+			return TrieDictionary.HU;
+		}
 		// The default dictionary is english
 		else {
-			return TrieDictionary.ENGLISH;
+			return TrieDictionary.EN;
 		}
 
 		// TODO Custom dictionary by specifying value set
