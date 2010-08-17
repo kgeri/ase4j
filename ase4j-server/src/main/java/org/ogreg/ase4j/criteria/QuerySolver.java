@@ -1,270 +1,302 @@
 package org.ogreg.ase4j.criteria;
 
+import org.ogreg.ase4j.criteria.LogicalExpression.LogicalType;
+
+import org.ogreg.common.Operator;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.ogreg.ase4j.criteria.LogicalExpression.LogicalType;
-import org.ogreg.common.Operator;
 
 /**
  * Base class for association query solvers.
- * 
- * @param <R> The type of the solver's results
- * @author Gergely Kiss
+ *
+ * @param   <R>  The type of the solver's results
+ *
+ * @author  Gergely Kiss
  */
 public abstract class QuerySolver<R extends QueryResult> {
 
-	/**
-	 * Solves the specified query and returns the results.
-	 * 
-	 * @param query
-	 * @return
-	 * @throws QueryExecutionException If the query execution has failed
-	 */
-	public R solve(Query query) throws QueryExecutionException {
-		if (query.select == null) {
-			throw new IllegalArgumentException("The query select must not be null");
-		}
+    /**
+     * Solves the specified query and returns the results.
+     *
+     * @param   query
+     *
+     * @return
+     *
+     * @throws  QueryExecutionException  If the query execution has failed
+     */
+    public R solve(Query query) throws QueryExecutionException {
 
-		R results = select(query.select);
+        if (query.select == null) {
+            throw new IllegalArgumentException("The query select must not be null");
+        }
 
-		if (results.isNegated()) {
-			// The final result came out negated, we cannot return the universe
-			throw new QueryExecutionException(
-					"Your select evaluated to a negated result, which means that the result set would be too big. Please revise your selector: "
-							+ query.select);
-		}
+        R results = select(query.select);
 
-		Expression filter = query.filter;
+        if (results.isNegated()) {
 
-		if (filter != null) {
-			List<Comparison> ret = new LinkedList<Comparison>();
+            // The final result came out negated, we cannot return the universe
+            throw new QueryExecutionException(
+                "Your select evaluated to a negated result, which means that the result set would be too big. Please revise your selector: " +
+                query.select);
+        }
 
-			collectComparisons(query.filter, ret);
+        Expression filter = query.filter;
 
-			results = filter(results, ret);
-		}
+        if (filter != null) {
+            List<Comparison> ret = new LinkedList<Comparison>();
 
-		if (query.limit > 0) {
-			results = limit(results, query.limit);
-		}
+            collectComparisons(query.filter, ret);
 
-		return results;
-	}
+            results = filter(results, ret);
+        }
 
-	private void collectComparisons(Expression filter, List<Comparison> dest)
-			throws QueryExecutionException {
+        if (query.limit > 0) {
+            results = limit(results, query.limit);
+        }
 
-		// Simple filters
-		if (filter instanceof FieldExpression<?>) {
-			FieldExpression<?> fe = (FieldExpression<?>) filter;
-			dest.add(new Comparison(fe.fieldName, fe.op, fe.value));
-		}
-		// AND expressions
-		else if (filter instanceof LogicalExpression
-				&& ((LogicalExpression) filter).type == LogicalType.AND) {
-			for (Expression exp : ((LogicalExpression) filter).expressions) {
-				collectComparisons(exp, dest);
-			}
-		} else {
-			throw new QueryExecutionException(
-					"Only simple filters and AND expressions are supported");
-		}
-	}
+        return results;
+    }
 
-	/**
-	 * Solves the given select expression and returns the result.
-	 * 
-	 * @param e
-	 * @return The solver's result
-	 * @throws QueryExecutionException If the query execution has failed
-	 */
-	private R select(Expression e) throws QueryExecutionException {
+    private void collectComparisons(Expression filter, List<Comparison> dest)
+        throws QueryExecutionException {
 
-		if (e instanceof LogicalExpression) {
-			LogicalExpression le = (LogicalExpression) e;
+        // Simple filters
+        if (filter instanceof FieldExpression<?>) {
+            FieldExpression<?> fe = (FieldExpression<?>) filter;
+            dest.add(new Comparison(fe.fieldName, fe.op, fe.value));
+        }
+        // AND expressions
+        else if ((filter instanceof LogicalExpression) &&
+                (((LogicalExpression) filter).type == LogicalType.AND)) {
 
-			// TODO query optimization by result set size
+            for (Expression exp : ((LogicalExpression) filter).expressions) {
+                collectComparisons(exp, dest);
+            }
+        } else {
+            throw new QueryExecutionException(
+                "Only simple filters and AND expressions are supported");
+        }
+    }
 
-			Expression lhs = le.expressions.get(0);
-			R leftResult = select(lhs);
-			boolean isLeftNegated = leftResult.isNegated();
+    /**
+     * Solves the given select expression and returns the result.
+     *
+     * @param   e
+     *
+     * @return  The solver's result
+     *
+     * @throws  QueryExecutionException  If the query execution has failed
+     */
+    private R select(Expression e) throws QueryExecutionException {
 
-			if (le.type == LogicalType.AND) {
+        if (e instanceof LogicalExpression) {
+            LogicalExpression le = (LogicalExpression) e;
 
-				for (int i = 1; i < le.expressions.size(); i++) {
-					Expression rhs = le.expressions.get(i);
-					R rightResult = select(rhs);
-					boolean isRightNegated = rightResult.isNegated();
+            // TODO query optimization by result set size
 
-					if (isLeftNegated) {
+            Expression lhs = le.expressions.get(0);
+            R leftResult = select(lhs);
+            boolean isLeftNegated = leftResult.isNegated();
 
-						if (isRightNegated) {
-							rightResult = union(leftResult, rightResult);
-							rightResult.setNegated(true);
-						} else {
-							rightResult = minus(rightResult, leftResult);
-						}
-					} else {
+            if (le.type == LogicalType.AND) {
 
-						if (isRightNegated) {
-							rightResult = minus(leftResult, rightResult);
-						} else {
-							rightResult = intersection(leftResult, rightResult);
-						}
-					}
+                for (int i = 1; i < le.expressions.size(); i++) {
+                    Expression rhs = le.expressions.get(i);
+                    R rightResult = select(rhs);
+                    boolean isRightNegated = rightResult.isNegated();
 
-					leftResult = rightResult;
-					isLeftNegated = isRightNegated;
-				}
-			} else if (le.type == LogicalType.OR) {
+                    if (isLeftNegated) {
 
-				for (int i = 1; i < le.expressions.size(); i++) {
-					Expression rhs = le.expressions.get(i);
-					R rr = select(rhs);
-					boolean isRightNegated = rr.isNegated();
+                        if (isRightNegated) {
+                            rightResult = union(leftResult, rightResult);
+                            rightResult.setNegated(true);
+                        } else {
+                            rightResult = minus(rightResult, leftResult);
+                        }
+                    } else {
 
-					if (!isLeftNegated && !isRightNegated) {
-						rr = union(leftResult, rr);
-					} else {
-						// Negation is not supported for OR expressions, because
-						// the result set would be the universe
-						throw new QueryExecutionException(
-								"You have negated an OR expression, which means that the result set would be too big. Please revise your query at: "
-										+ e);
-					}
+                        if (isRightNegated) {
+                            rightResult = minus(leftResult, rightResult);
+                        } else {
+                            rightResult = intersection(leftResult, rightResult);
+                        }
+                    }
 
-					leftResult = rr;
-					isLeftNegated = isRightNegated;
-				}
-			}
+                    leftResult = rightResult;
+                    isLeftNegated = isRightNegated;
+                }
+            } else if (le.type == LogicalType.OR) {
 
-			return leftResult;
-		} else if (e instanceof PhraseExpression) {
-			return query(((PhraseExpression) e).phrase);
-		} else if (e instanceof NotExpression) {
-			R r = select(((NotExpression) e).expression);
-			r.setNegated(!r.isNegated());
+                for (int i = 1; i < le.expressions.size(); i++) {
+                    Expression rhs = le.expressions.get(i);
+                    R rr = select(rhs);
+                    boolean isRightNegated = rr.isNegated();
 
-			return r;
-		}
+                    if (!isLeftNegated && !isRightNegated) {
+                        rr = union(leftResult, rr);
+                    } else {
 
-		return solveExtended(e);
-	}
+                        // Negation is not supported for OR expressions, because
+                        // the result set would be the universe
+                        throw new QueryExecutionException(
+                            "You have negated an OR expression, which means that the result set would be too big. Please revise your query at: " +
+                            e);
+                    }
 
-	/**
-	 * Returns true if <code>valueA</code> <code>op</code> <code>valueB</code>is
-	 * true.
-	 * 
-	 * @param valueA
-	 * @param op
-	 * @param valueB
-	 * @return
-	 */
-	// TODO How about error handling?
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	protected boolean evaluate(Object valueA, Operator op, Object valueB) {
-		switch (op) {
-		case EQ:
-			return valueA.equals(valueB);
-		case NE:
-			return !valueA.equals(valueB);
-		case GE:
-			return ((Comparable) valueA).compareTo(valueB) >= 0;
-		case GT:
-			return ((Comparable) valueA).compareTo(valueB) > 0;
-		case LE:
-			return ((Comparable) valueA).compareTo(valueB) <= 0;
-		case LT:
-			return ((Comparable) valueA).compareTo(valueB) < 0;
-		case MATCHES:
-			return ((Pattern) valueB).matcher((CharSequence) valueA).matches();
-		}
+                    leftResult = rr;
+                    isLeftNegated = isRightNegated;
+                }
+            }
 
-		throw new UnsupportedOperationException("Unsupported operator: " + op);
-	}
+            return leftResult;
+        } else if (e instanceof PhraseExpression) {
+            return query(((PhraseExpression) e).phrase);
+        } else if (e instanceof NotExpression) {
+            R r = select(((NotExpression) e).expression);
+            r.setNegated(!r.isNegated());
 
-	/**
-	 * Subclasses must provide the implementation to get query results using the
-	 * given expression.
-	 * 
-	 * @param phrase
-	 * @return
-	 * @throws QueryExecutionException if the solver failed to get the results
-	 */
-	protected abstract R query(String phrase) throws QueryExecutionException;
+            return r;
+        }
 
-	/**
-	 * Subclasses must provide implementation for calculating the union of two
-	 * results here.
-	 * 
-	 * @param valueA
-	 * @param valueB
-	 * @return The union of the two values, never null
-	 */
-	protected abstract R union(R valueA, R valueB);
+        return solveExtended(e);
+    }
 
-	/**
-	 * Subclasses must provide implementation for calculating the intersection
-	 * of two results here.
-	 * 
-	 * @param valueA
-	 * @param valueB
-	 * @return The intersection of the two values, never null
-	 */
-	protected abstract R intersection(R valueA, R valueB);
+    /**
+     * Returns true if <code>valueA</code> <code>op</code> <code>valueB</code>is true.
+     *
+     * @param   valueA
+     * @param   op
+     * @param   valueB
+     *
+     * @return
+     */
+    // TODO How about error handling?
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    protected boolean evaluate(Object valueA, Operator op, Object valueB) {
 
-	/**
-	 * Subclasses must provide implementation for calculating the subtraction of
-	 * two results here.
-	 * 
-	 * @param valueA
-	 * @param valueB
-	 * @return The subtraction of the two values, never null
-	 */
-	protected abstract R minus(R valueA, R valueB);
+        switch (op) {
 
-	/**
-	 * Subclasses should provide implementation for limiting the result set.
-	 * 
-	 * @param results
-	 * @param limit
-	 * @return
-	 */
-	protected abstract R limit(R results, int limit);
+        case EQ: {
+            return (valueA == null) ? (valueB == null) : valueA.equals(valueB);
+        }
 
-	/**
-	 * Subclasses should provide implementation for filtering the result set.
-	 * 
-	 * @param results
-	 * @param filter
-	 * @return
-	 * @throws QueryExecutionException on filter failure
-	 */
-	protected abstract R filter(R results, List<Comparison> comparisons)
-			throws QueryExecutionException;
+        case NE: {
+            return (valueA == null) ? (valueB != null) : (!valueA.equals(valueB));
+        }
 
-	/**
-	 * Subclasses may provide implementation for solving other Expression types
-	 * here.
-	 * 
-	 * @param e
-	 * @return
-	 */
-	protected R solveExtended(Expression e) {
-		throw new UnsupportedOperationException();
-	}
+        case GE: {
+            return (valueA == null) ? false : (((Comparable) valueA).compareTo(valueB) >= 0);
+        }
 
-	public class Comparison {
-		public final String fieldName;
-		public final Operator op;
-		public final Object value;
+        case GT: {
+            return (valueA == null) ? false : (((Comparable) valueA).compareTo(valueB) > 0);
+        }
 
-		public Comparison(String fieldName, Operator op, Object value) {
-			this.fieldName = fieldName;
-			this.op = op;
-			this.value = value;
-		}
-	}
+        case LE: {
+            return (valueA == null) ? false : (((Comparable) valueA).compareTo(valueB) <= 0);
+        }
+
+        case LT: {
+            return (valueA == null) ? false : (((Comparable) valueA).compareTo(valueB) < 0);
+        }
+
+        case MATCHES: {
+            return ((valueA == null) || (valueB == null)) ? (valueA == valueB)
+                                                          : ((Pattern) valueB).matcher(
+                    (CharSequence) valueA).matches();
+        }
+        }
+
+        throw new UnsupportedOperationException("Unsupported operator: " + op);
+    }
+
+    /**
+     * Subclasses must provide the implementation to get query results using the given expression.
+     *
+     * @param   phrase
+     *
+     * @return
+     *
+     * @throws  QueryExecutionException  if the solver failed to get the results
+     */
+    protected abstract R query(String phrase) throws QueryExecutionException;
+
+    /**
+     * Subclasses must provide implementation for calculating the union of two results here.
+     *
+     * @param   valueA
+     * @param   valueB
+     *
+     * @return  The union of the two values, never null
+     */
+    protected abstract R union(R valueA, R valueB);
+
+    /**
+     * Subclasses must provide implementation for calculating the intersection of two results here.
+     *
+     * @param   valueA
+     * @param   valueB
+     *
+     * @return  The intersection of the two values, never null
+     */
+    protected abstract R intersection(R valueA, R valueB);
+
+    /**
+     * Subclasses must provide implementation for calculating the subtraction of two results here.
+     *
+     * @param   valueA
+     * @param   valueB
+     *
+     * @return  The subtraction of the two values, never null
+     */
+    protected abstract R minus(R valueA, R valueB);
+
+    /**
+     * Subclasses should provide implementation for limiting the result set.
+     *
+     * @param   results
+     * @param   limit
+     *
+     * @return
+     */
+    protected abstract R limit(R results, int limit);
+
+    /**
+     * Subclasses should provide implementation for filtering the result set.
+     *
+     * @param   results
+     * @param   filter
+     *
+     * @return
+     *
+     * @throws  QueryExecutionException  on filter failure
+     */
+    protected abstract R filter(R results, List<Comparison> comparisons)
+        throws QueryExecutionException;
+
+    /**
+     * Subclasses may provide implementation for solving other Expression types here.
+     *
+     * @param   e
+     *
+     * @return
+     */
+    protected R solveExtended(Expression e) {
+        throw new UnsupportedOperationException();
+    }
+
+    public class Comparison {
+        public final String fieldName;
+        public final Operator op;
+        public final Object value;
+
+        public Comparison(String fieldName, Operator op, Object value) {
+            this.fieldName = fieldName;
+            this.op = op;
+            this.value = value;
+        }
+    }
 }
