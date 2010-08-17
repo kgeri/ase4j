@@ -26,7 +26,8 @@ import java.util.Map.Entry;
  *
  * @author  Gergely Kiss
  */
-class GroupedAssociationStoreImpl<F, T> implements GroupedAssociationStore<F, T>, Flushable,
+// TODO Made public because of Cajo - need to test RMI access
+public class GroupedAssociationStoreImpl<F, T> implements GroupedAssociationStore<F, T>, Flushable,
     Closeable {
 
     /** The configured and initialized association stores. */
