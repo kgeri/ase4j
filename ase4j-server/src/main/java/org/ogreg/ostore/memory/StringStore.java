@@ -29,7 +29,7 @@ import org.ogreg.util.TrieSerializer.TrieSerializerListener;
  * 
  * @author Gergely Kiss
  */
-public class StringStore implements ConfigurableObjectStore<String>, Serializable {
+public class StringStore implements ConfigurableObjectStore<String>, StringStoreMBean, Serializable {
 	private static final long serialVersionUID = -6176261432587230445L;
 
 	private AtomicInteger nextKey;
@@ -212,5 +212,10 @@ public class StringStore implements ConfigurableObjectStore<String>, Serializabl
 
 		FileUtils.renameTo(tmp, storageFile);
 		tmp.delete();
+	}
+
+	@Override
+	public long getObjectCount() {
+		return toString.size();
 	}
 }

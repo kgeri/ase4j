@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
  * 
  * @author Gergely Kiss
  */
-public class FileObjectStoreImpl<T> extends BaseObjectStore<T> {
+public class FileObjectStoreImpl<T> extends BaseObjectStore<T> implements FileObjectStoreImplMBean {
 
 	/** The storage dir of this Object Store. */
 	private File storageDir;
@@ -154,5 +154,10 @@ public class FileObjectStoreImpl<T> extends BaseObjectStore<T> {
 	@Override
 	public void setMetadata(ObjectStoreMetadata metadata) {
 		this.metadata = metadata;
+	}
+
+	@Override
+	public long getObjectCount() {
+		return nextKey.longValue();
 	}
 }

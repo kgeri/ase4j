@@ -67,6 +67,7 @@ class AssociationBlock implements Serializable {
 	 * Merges all the associations from <code>value</code> to this row.
 	 * 
 	 * @param value
+	 * @return The number of new associations added
 	 */
 	public void merge(AssociationBlock value) {
 

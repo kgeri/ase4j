@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.ogreg.common.nio.BaseIndexedStore;
 import org.ogreg.common.nio.NioSerializer;
@@ -23,11 +24,39 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 	// The base capacity of a newly created association store
 	static int baseCapacity = 1024;
 
+	/** The in-memory cache of the association blocks. */
 	private LRUCache cache = new LRUCache();
+
+	/** The maximum number of cached blocks. */
 	private int maxCached = 1024;
+
+	/** The number of currently stored associations. */
+	private long associationCount = 0;
 
 	public CachedBlockStore() {
 		setSerializer(Serializer);
+	}
+
+	@Override
+	protected void writeHeader(FileChannel channel) throws IOException {
+		super.writeHeader(channel);
+
+		// Writing magic bytes
+		channel.write(ByteBuffer.wrap(MAGIC));
+
+		// Writing association count
+		NioUtils.writeLong(channel, associationCount);
+	}
+
+	@Override
+	protected void readHeader(FileChannel channel) throws IOException {
+		super.readHeader(channel);
+
+		// Reading magic bytes
+		channel.read(ByteBuffer.allocate(4));
+
+		// Reading association count
+		associationCount = NioUtils.readLong(channel);
 	}
 
 	/**
@@ -52,6 +81,7 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 			if (oldAssocs == null) {
 				super.add(from, assocs);
 				cache.put(from, assocs);
+				associationCount += assocs.size;
 
 				return;
 			}
@@ -61,7 +91,11 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 			}
 		}
 
-		oldAssocs.merge(assocs);
+		synchronized (oldAssocs) {
+			int oldSize = oldAssocs.size;
+			oldAssocs.merge(assocs);
+			associationCount += oldAssocs.size - oldSize;
+		}
 	}
 
 	/**
@@ -130,25 +164,30 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 		return baseCapacity;
 	}
 
-	@Override
-	protected void writeHeader(FileChannel channel) throws IOException {
-		super.writeHeader(channel);
-
-		// Writing magic bytes
-		channel.write(ByteBuffer.wrap(MAGIC));
+	long getAssociationCount() {
+		return associationCount;
 	}
 
-	@Override
-	protected void readHeader(FileChannel channel) throws IOException {
-		super.readHeader(channel);
-
-		// Reading magic bytes
-		channel.read(ByteBuffer.allocate(4));
+	LRUCache getCache() {
+		return cache;
 	}
 
 	// A simple LRU cache for association rows
 	class LRUCache extends LinkedHashMap<Integer, AssociationBlock> {
 		private static final long serialVersionUID = -5914565512322090452L;
+		private AtomicInteger cachedAssociationCount = new AtomicInteger(0);
+
+		@Override
+		public AssociationBlock put(Integer key, AssociationBlock value) {
+			AssociationBlock old = super.put(key, value);
+
+			if (old != null) {
+				cachedAssociationCount.addAndGet(-old.size);
+			}
+			cachedAssociationCount.addAndGet(value.size);
+
+			return old;
+		}
 
 		@Override
 		protected boolean removeEldestEntry(java.util.Map.Entry<Integer, AssociationBlock> eldest) {
@@ -161,9 +200,15 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 				} catch (IOException e) {
 					throw new IllegalStateException("Failed to flush eldest cache entry", e);
 				}
+
+				cachedAssociationCount.decrementAndGet();
 			}
 
 			return remove;
+		}
+
+		long getAssociationCount() {
+			return cachedAssociationCount.longValue();
 		}
 	}
 

@@ -46,9 +46,9 @@ public class CachedBlockStoreTest {
 
 			assertTrue(store.exists());
 
-			// Store size: 4 (ASE4J) + 4 (index capacity) + 4 (index maxKey) + 4
-			// * 8 (index entries)
-			assertEquals(store.length(), 44);
+			// Store size: 4 (ASE4J) + 8 (size) + 4 (index capacity) + 4 (index
+			// maxKey) + 4 * 8 (index entries)
+			assertEquals(store.length(), 52);
 		} catch (IOException e) {
 			throw new AssertionError(e);
 		}
@@ -125,7 +125,7 @@ public class CachedBlockStoreTest {
 	/**
 	 * Tests growing the association store.
 	 */
-	public void zestGrow01() {
+	public void testGrow01() {
 
 		try {
 			File store = FileTestSupport.createTempFile("assocs");
@@ -137,19 +137,19 @@ public class CachedBlockStoreTest {
 			// Testing storage holes also
 			fs.merge(assoc(3, 1, 40));
 
-			// Original size: 4 (AS4J) + 4 (index capacity) + 4 (index maxKey) +
-			// 4 * 8 (index entries) + 4 * (12 + 4 * 8) (association blocks of
-			// default size 4) = 220
-			assertEquals(store.length(), 176);
+			// Original size: 4 (AS4J) + 8 (size) + 4 (index capacity) + 4
+			// (index maxKey) + 4 * 8 (index entries) + 4 * (12 + 4 * 8)
+			// (association blocks of default size 4) = 220
+			assertEquals(store.length(), 184);
 
 			// Growing will occur here
 			fs.merge(assoc(4, 1, 50));
 			fs.merge(assoc(2, 1, 30));
 
-			// Target size: 4 (AS4J) + 4 (index capacity) + 4 (index maxKey) +
-			// 8 * 8 (index entries) + 5 * (12 + 4 * 8) (association blocks of
-			// default size 4) = 252
-			assertEquals(store.length(), 296);
+			// Target size: 4 (AS4J) + 8 (size) + 4 (index capacity) + 4 (index
+			// maxKey) + 8 * 8 (index entries) + 5 * (12 + 4 * 8) (association
+			// blocks of default size 4) = 252
+			assertEquals(store.length(), 304);
 
 			fs.flush();
 

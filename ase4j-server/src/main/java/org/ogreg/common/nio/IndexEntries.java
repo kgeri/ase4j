@@ -61,6 +61,7 @@ final class IndexEntries {
 		buffer.putLong(ENTRY_OFFSET + (key * 8), value);
 
 		if (key > maxKey) {
+			// TODO This may cause problems because it's not threadsafe...
 			maxKey = key;
 		}
 	}

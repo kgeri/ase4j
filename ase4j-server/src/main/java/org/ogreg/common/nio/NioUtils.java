@@ -225,30 +225,44 @@ public abstract class NioUtils {
 	 * @throws IOException
 	 */
 	public static final int readInt(FileChannel channel, long position) throws IOException {
-		ByteBuffer singleIntBuf = ByteBuffer.allocate(4);
+		ByteBuffer singleBuf = ByteBuffer.allocate(4);
 
-		channel.read(singleIntBuf, position);
-		singleIntBuf.flip();
+		channel.read(singleBuf, position);
+		singleBuf.flip();
 
-		return singleIntBuf.getInt();
+		return singleBuf.getInt();
 	}
 
 	/**
-	 * Writes an integer to the channel at the specified position.
+	 * Reads a long from the channel at the current position.
 	 * 
 	 * @param channel
-	 * @param position
+	 * @return
+	 * @throws IOException
+	 */
+	public static final long readLong(FileChannel channel) throws IOException {
+		ByteBuffer singleBuf = ByteBuffer.allocate(8);
+
+		channel.read(singleBuf);
+		singleBuf.flip();
+
+		return singleBuf.getLong();
+	}
+
+	/**
+	 * Writes a long to the channel at the current position.
+	 * 
+	 * @param channel
 	 * @param value
 	 * @throws IOException
 	 */
-	public static final void writeInt(FileChannel channel, long position, int value)
-			throws IOException {
-		ByteBuffer singleIntBuf = ByteBuffer.allocate(4);
+	public static final void writeLong(FileChannel channel, long value) throws IOException {
+		ByteBuffer singleBuf = ByteBuffer.allocate(8);
 
-		singleIntBuf.putInt(value);
-		singleIntBuf.flip();
+		singleBuf.putLong(value);
+		singleBuf.flip();
 
-		channel.write(singleIntBuf, position);
+		channel.write(singleBuf);
 	}
 
 	/**
