@@ -201,7 +201,7 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 					throw new IllegalStateException("Failed to flush eldest cache entry", e);
 				}
 
-				cachedAssociationCount.decrementAndGet();
+				cachedAssociationCount.addAndGet(-eldest.getValue().size);
 			}
 
 			return remove;
