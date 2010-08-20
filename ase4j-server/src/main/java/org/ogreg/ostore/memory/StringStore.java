@@ -209,6 +209,7 @@ public class StringStore implements ConfigurableObjectStore<String>, StringStore
 
 			TrieSerializer<Integer> serializer = new TrieSerializer<Integer>(Integer.class);
 			serializer.serialize(toInt, channel);
+			channel.force(false);
 		} finally {
 			NioUtils.closeQuietly(channel);
 		}

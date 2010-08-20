@@ -35,8 +35,8 @@ import org.ogreg.common.nio.serializer.SerializerManager;
  * {@link NioSerializer}.
  * </p>
  * <p>
- * Please note that the buffer limit is currently 4096 bytes, so trying to
- * serialize keys and values larger than that will throw a
+ * Please note that the buffer limit is currently {@link #MAX_TRIENODE_SIZE}
+ * bytes, so trying to serialize keys and values larger than that will throw a
  * {@link BufferOverflowException}. This is by design. Tries are not meant to
  * store such huge strings or values, please use an
  * {@link org.ogreg.ostore.ObjectStore} for that.
@@ -46,8 +46,11 @@ import org.ogreg.common.nio.serializer.SerializerManager;
  * @see SerializerManager
  */
 public class TrieSerializer<T> {
-	// TODO Prepare for larger content?
-	private final ByteBuffer buf = ByteBuffer.allocate(4096);
+	// The maximum size a trie node may occupy
+	private static final int MAX_TRIENODE_SIZE = 4096;
+
+	// Allocate 512k buffer
+	private final ByteBuffer buf = ByteBuffer.allocateDirect(512 * 1024);
 
 	/** The serializer for the trie's values. */
 	private final NioSerializer<T> valueSerializer;
@@ -64,9 +67,14 @@ public class TrieSerializer<T> {
 	 * @param channel The target channel
 	 * @throws IOException on write error
 	 */
-	public void serialize(Trie<T> trie, FileChannel channel) throws IOException {
+	public synchronized void serialize(Trie<T> trie, FileChannel channel) throws IOException {
 		NioUtils.serializeTo(channel, trie.dict);
+
+		buf.clear();
 		serialize(new TrieNodes(), trie.root, channel);
+
+		buf.flip();
+		channel.write(buf);
 	}
 
 	/**
@@ -76,10 +84,12 @@ public class TrieSerializer<T> {
 	 * @return
 	 * @throws IOException on read error
 	 */
-	public Trie<T> deserialize(FileChannel channel, TrieSerializerListener<T> listener)
+	public synchronized Trie<T> deserialize(FileChannel channel, TrieSerializerListener<T> listener)
 			throws IOException {
 		TrieDictionary dict = NioUtils.deserializeFrom(channel, TrieDictionary.class);
 		Trie<T> trie = new Trie<T>(dict);
+
+		buf.clear();
 		deserialize(trie, channel, listener);
 		return trie;
 	}
@@ -124,29 +134,21 @@ public class TrieSerializer<T> {
 	 */
 	private void deserialize(Trie<T> trie, FileChannel src, TrieSerializerListener<T> listener)
 			throws IOException {
-		long len = src.size();
 
-		while (src.position() < len) {
-			// Reading key length
-			buf.clear().limit(4);
-			src.read(buf);
+		while (src.read(buf) != -1) {
 			buf.flip();
-			int n = buf.getInt();
 
-			// Reading key
-			byte[] key = new byte[n];
-			ByteBuffer keyBuf = ByteBuffer.wrap(key);
-			src.read(keyBuf);
+			while (buf.remaining() > MAX_TRIENODE_SIZE) {
+				read(trie, listener);
+			}
 
-			// Reading value
-			buf.clear().limit(valueSerializer.sizeOf(src, src.position()));
-			src.read(buf);
-			buf.flip();
-			T value = valueSerializer.deserialize(buf);
+			buf.compact();
+		}
 
-			// Adding trie entry
-			trie.set(key, value);
-			listener.onEntryRead(key, value);
+		buf.flip();
+
+		while (buf.hasRemaining()) {
+			read(trie, listener);
 		}
 	}
 
@@ -167,7 +169,12 @@ public class TrieSerializer<T> {
 	 */
 	private synchronized void write(TrieNodes prefix, TrieNode<T> node, FileChannel dest)
 			throws IOException {
-		buf.clear();
+
+		if (buf.remaining() < MAX_TRIENODE_SIZE) {
+			buf.flip();
+			dest.write(buf);
+			buf.clear();
+		}
 
 		// Writing key length
 		int n = 0;
@@ -185,16 +192,37 @@ public class TrieSerializer<T> {
 		buf.put(node.prefix, node.offset, node.count);
 
 		// Writing value
-		int m = valueSerializer.sizeOf(node.value);
 		valueSerializer.serialize(node.value, buf);
+	}
 
-		buf.flip().limit(4 + n + m);
-		dest.write(buf);
+	/**
+	 * Reads a node key and value in the format specified in
+	 * {@link #write(TrieNodes, TrieNode, FileChannel)}, then creates and adds a
+	 * new Trie node.
+	 * 
+	 * @param trie
+	 * @param listener
+	 * @throws IOException on channel read error
+	 */
+	private void read(Trie<T> trie, TrieSerializerListener<T> listener) throws IOException {
+		// Reading key length
+		int n = buf.getInt();
+
+		// Reading key
+		byte[] key = new byte[n];
+		buf.get(key);
+
+		// Reading value
+		T value = valueSerializer.deserialize(buf);
+
+		// Adding trie entry
+		trie.set(key, value);
+		listener.onEntryRead(key, value);
 	}
 
 	// Fast TrieNode queue
 	private final class TrieNodes {
-		TrieNode<?>[] nodes = new TrieNode<?>[1];
+		TrieNode<?>[] nodes = new TrieNode<?>[16];
 		int size = 0;
 
 		public void push(TrieNode<?> node) {
