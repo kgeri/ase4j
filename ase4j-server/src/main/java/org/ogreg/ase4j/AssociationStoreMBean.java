@@ -1,5 +1,7 @@
 package org.ogreg.ase4j;
 
+import java.io.IOException;
+
 /**
  * JMX interface for association stores.
  * 
@@ -48,4 +50,9 @@ public interface AssociationStoreMBean {
 	 * @return
 	 */
 	double getBlockUsage();
+
+	/**
+	 * Flushes the association store.
+	 */
+	void flush() throws IOException;
 }

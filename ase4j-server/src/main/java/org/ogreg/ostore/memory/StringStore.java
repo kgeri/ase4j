@@ -1,6 +1,8 @@
 package org.ogreg.ostore.memory;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
@@ -19,6 +21,7 @@ import org.ogreg.ostore.ObjectStoreException;
 import org.ogreg.ostore.ObjectStoreManager;
 import org.ogreg.ostore.ObjectStoreMetadata;
 import org.ogreg.ostore.index.UniqueIndex;
+import org.ogreg.util.Callback;
 import org.ogreg.util.Trie;
 import org.ogreg.util.TrieDictionary;
 import org.ogreg.util.TrieSerializer;
@@ -217,5 +220,40 @@ public class StringStore implements ConfigurableObjectStore<String>, StringStore
 	@Override
 	public long getObjectCount() {
 		return toString.size();
+	}
+
+	@Override
+	public void dump(String path) throws IOException {
+		File file = new File(path);
+		if (file.exists()) {
+			throw new IOException("Target path already exists: '" + path
+					+ "'. Dump aborted for security reasons.");
+		}
+
+		BufferedWriter bw = null;
+		try {
+			bw = new BufferedWriter(new FileWriter(file));
+			final BufferedWriter w = bw;
+
+			toInt.getWords(new Callback<String>() {
+				@Override
+				public void callback(String value) {
+					try {
+						w.append(value).append('\n');
+					} catch (IOException e) {
+						throw new IllegalStateException(e);
+					}
+				}
+			});
+
+			bw.flush();
+		} catch (IllegalStateException e) {
+			if (e.getCause() instanceof IOException) {
+				throw ((IOException) e.getCause());
+			}
+			throw e;
+		} finally {
+			NioUtils.closeQuietly(bw);
+		}
 	}
 }

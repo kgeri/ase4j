@@ -1,5 +1,7 @@
 package org.ogreg.ostore;
 
+import java.io.IOException;
+
 /**
  * JMX interface for object stores.
  * 
@@ -13,4 +15,9 @@ public interface ObjectStoreMBean {
 	 * @return
 	 */
 	long getObjectCount();
+
+	/**
+	 * Flushes the object store.
+	 */
+	void flush() throws IOException;
 }
