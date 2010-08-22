@@ -217,6 +217,23 @@ public abstract class NioUtils {
 	}
 
 	/**
+	 * Reads an integer from the channel at the current position.
+	 * 
+	 * @param channel
+	 * @param position
+	 * @return
+	 * @throws IOException
+	 */
+	public static final int readInt(FileChannel channel) throws IOException {
+		ByteBuffer singleBuf = ByteBuffer.allocate(4);
+
+		channel.read(singleBuf);
+		singleBuf.flip();
+
+		return singleBuf.getInt();
+	}
+
+	/**
 	 * Reads an integer from the channel at the specified position.
 	 * 
 	 * @param channel
@@ -225,30 +242,60 @@ public abstract class NioUtils {
 	 * @throws IOException
 	 */
 	public static final int readInt(FileChannel channel, long position) throws IOException {
-		ByteBuffer singleIntBuf = ByteBuffer.allocate(4);
+		ByteBuffer singleBuf = ByteBuffer.allocate(4);
 
-		channel.read(singleIntBuf, position);
-		singleIntBuf.flip();
+		channel.read(singleBuf, position);
+		singleBuf.flip();
 
-		return singleIntBuf.getInt();
+		return singleBuf.getInt();
 	}
 
 	/**
-	 * Writes an integer to the channel at the specified position.
+	 * Writes an integer to the channel at the current position.
 	 * 
 	 * @param channel
-	 * @param position
 	 * @param value
 	 * @throws IOException
 	 */
-	public static final void writeInt(FileChannel channel, long position, int value)
-			throws IOException {
-		ByteBuffer singleIntBuf = ByteBuffer.allocate(4);
+	public static final void writeInt(FileChannel channel, int value) throws IOException {
+		ByteBuffer singleBuf = ByteBuffer.allocate(4);
 
-		singleIntBuf.putInt(value);
-		singleIntBuf.flip();
+		singleBuf.putInt(value);
+		singleBuf.flip();
 
-		channel.write(singleIntBuf, position);
+		channel.write(singleBuf);
+	}
+
+	/**
+	 * Reads a long from the channel at the current position.
+	 * 
+	 * @param channel
+	 * @return
+	 * @throws IOException
+	 */
+	public static final long readLong(FileChannel channel) throws IOException {
+		ByteBuffer singleBuf = ByteBuffer.allocate(8);
+
+		channel.read(singleBuf);
+		singleBuf.flip();
+
+		return singleBuf.getLong();
+	}
+
+	/**
+	 * Writes a long to the channel at the current position.
+	 * 
+	 * @param channel
+	 * @param value
+	 * @throws IOException
+	 */
+	public static final void writeLong(FileChannel channel, long value) throws IOException {
+		ByteBuffer singleBuf = ByteBuffer.allocate(8);
+
+		singleBuf.putLong(value);
+		singleBuf.flip();
+
+		channel.write(singleBuf);
 	}
 
 	/**

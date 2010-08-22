@@ -1,4 +1,4 @@
-package org.ogreg.ase4j;
+package org.ogreg.util;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
@@ -11,10 +11,9 @@ import org.testng.annotations.Test;
  * Tests for the {@link AssociationUtils} class.
  * 
  * @author Gergely Kiss
- * 
  */
 @Test(groups = "correctness")
-public class AssociationUtilsTest extends AssociationUtils {
+public class ArrayUtilsTest {
 
 	/**
 	 * Tests that the {@link org.ogreg.util.Arrays#insert(int[], int, int, int)}

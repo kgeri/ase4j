@@ -1,8 +1,6 @@
 package org.ogreg.util;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * A fast and memory efficient Trie data structure.
@@ -112,22 +110,19 @@ public class Trie<T> implements Serializable {
 	 * 
 	 * @return
 	 */
-	public List<String> getWords() {
-		List<String> ret = new ArrayList<String>();
-		getWords("", root, ret);
-
-		return ret;
+	public void getWords(Callback<String> processor) {
+		getWords("", root, processor);
 	}
 
 	public TrieDictionary getDictionary() {
 		return dict;
 	}
 
-	private void getWords(String prefix, TrieNode<T> node, List<String> dest) {
+	private void getWords(String prefix, TrieNode<T> node, Callback<String> processor) {
 		String value = prefix + dict.decode(node.prefix, node.offset, node.count);
 
 		if (node.value != null) {
-			dest.add(value);
+			processor.callback(value);
 		}
 
 		TrieNode<T>[] children = node.children;
@@ -139,7 +134,7 @@ public class Trie<T> implements Serializable {
 		for (int i = 0; i < children.length; i++) {
 
 			if (children[i] != null) {
-				getWords(value, children[i], dest);
+				getWords(value, children[i], processor);
 			}
 		}
 	}

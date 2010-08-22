@@ -2,14 +2,14 @@ package org.ogreg.ase4j.criteria;
 
 import java.io.Serializable;
 
+import org.ogreg.ase4j.AssociationStore.Operation;
+import org.ogreg.ase4j.Params;
 
 /**
- * An association query.
- * 
- * An association query consists of two parts: a select and a filter. The select
- * part marks the 'from' subjects in a logical expressions to get the
- * associations from, and the filter narrows the search among these 'to'
- * targets.
+ * An association query. An association query consists of two parts: a select
+ * and a filter. The select part marks the 'from' subjects in a logical
+ * expressions to get the associations from, and the filter narrows the search
+ * among these 'to' targets.
  * 
  * @author Gergely Kiss
  */
@@ -18,7 +18,6 @@ public class Query implements Serializable {
 
 	/**
 	 * The select expression.
-	 * 
 	 * <p>
 	 * The select expression specifies the subjects which need to be queried for
 	 * all of their associations.
@@ -28,7 +27,6 @@ public class Query implements Serializable {
 
 	/**
 	 * The filter expression.
-	 * 
 	 * <p>
 	 * The filter expression specifies how to filter the association targets.
 	 * </p>
@@ -37,7 +35,6 @@ public class Query implements Serializable {
 
 	/**
 	 * The maximum number of results to return, or 0 if unlimited.
-	 * 
 	 * <p>
 	 * Default: 1000
 	 * </p>
@@ -45,8 +42,15 @@ public class Query implements Serializable {
 	int limit = 1000;
 
 	/**
+	 * The association parameters to use for querying the associations.
+	 * <p>
+	 * The default operation is {@link Operation#SUM}.
+	 * </p>
+	 */
+	final Params params;
+
+	/**
 	 * Creates the query using the <code>select</code> as a selector.
-	 * 
 	 * <p>
 	 * Please see the {@link Restrictions} class on how to build an expression.
 	 * Please note that it depends on the {@link QuerySolver} implementation
@@ -57,12 +61,28 @@ public class Query implements Serializable {
 	 * @return
 	 */
 	public Query(Expression select) {
+		this(select, new Params(Operation.SUM));
+	}
+
+	/**
+	 * Creates the query using the <code>select</code> as a selector and
+	 * <code>params</code> as the association parameters.
+	 * <p>
+	 * Please see the {@link Restrictions} class on how to build an expression.
+	 * Please note that it depends on the {@link QuerySolver} implementation
+	 * whether or not it will accept a particular expression as a selector.
+	 * </p>
+	 * 
+	 * @param select
+	 * @return
+	 */
+	public Query(Expression select, Params params) {
 		this.select = select;
+		this.params = params;
 	}
 
 	/**
 	 * Assigns the <code>filter</code> expression to this query.
-	 * 
 	 * <p>
 	 * Please see the {@link Restrictions} class on how to build an expression.
 	 * Please note that it depends on the {@link QuerySolver} implementation
@@ -79,7 +99,6 @@ public class Query implements Serializable {
 
 	/**
 	 * Sets the maximum number of elements to return.
-	 * 
 	 * <p>
 	 * This may greatly enhance query execution time, since only a fraction of
 	 * the associations need to be materialized.
@@ -100,5 +119,14 @@ public class Query implements Serializable {
 	 */
 	public int limit() {
 		return limit;
+	}
+
+	/**
+	 * Returns the association parameters for this query.
+	 * 
+	 * @return
+	 */
+	public Params params() {
+		return params;
 	}
 }

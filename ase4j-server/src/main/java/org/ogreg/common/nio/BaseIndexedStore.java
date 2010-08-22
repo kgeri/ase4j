@@ -49,6 +49,9 @@ public abstract class BaseIndexedStore<T> implements Closeable, Flushable {
 	/**
 	 * The implementation may provider its custom header deserialization code
 	 * here.
+	 * <p>
+	 * This method is when reopening an already created storage.
+	 * </p>
 	 * 
 	 * @param channel The channel to deserialize the header from
 	 * @throws IOException on storage failure
@@ -59,6 +62,10 @@ public abstract class BaseIndexedStore<T> implements Closeable, Flushable {
 	/**
 	 * The implementation may provider its custom header serialization code
 	 * here.
+	 * <p>
+	 * This method is invoked when creating a new storage (including reindexing
+	 * a storage) and also when flushing the storage.
+	 * </p>
 	 * 
 	 * @param channel The channel to serialize the header to
 	 * @throws IOException on storage failure
@@ -340,6 +347,11 @@ public abstract class BaseIndexedStore<T> implements Closeable, Flushable {
 	@Override
 	public synchronized void flush() throws IOException {
 		onBeforeFlush();
+
+		// Flushing header
+		storageChannel.position(0);
+		writeHeader(storageChannel);
+
 		index.flush();
 	}
 
@@ -355,6 +367,30 @@ public abstract class BaseIndexedStore<T> implements Closeable, Flushable {
 			storageChannel.close();
 			storageChannel = null;
 		}
+	}
+
+	/**
+	 * Returns the number of stored entities in this store.
+	 * <p>
+	 * Please note that this is an <b>estimate</b>, which uses the
+	 * {@link IndexEntries#maxKey} property. It is not guaranteed that every
+	 * index key is used, although it is most likely.
+	 * </p>
+	 * 
+	 * @return
+	 */
+	public int getSize() {
+		return index.getMaxKey();
+	}
+
+	/**
+	 * Returns the capacity of the index (the maximum number of stored elements
+	 * without a reindex).
+	 * 
+	 * @return
+	 */
+	public int getCapacity() {
+		return index.getCapacity();
 	}
 
 	private ByteBuffer getBufferOf(int size) {

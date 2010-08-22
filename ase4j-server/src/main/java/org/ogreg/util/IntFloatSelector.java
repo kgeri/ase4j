@@ -3,19 +3,16 @@ package org.ogreg.util;
 import java.util.Arrays;
 
 /**
- * An int-int selector.
- * 
+ * An int-float selector.
  * <p>
- * This is a data structure for determining the top k elements of n int-int
+ * This is a data structure for determining the top k elements of n int-float
  * pairs in O(n * log(k)) time. It is based on a binary heap.
  * </p>
- * 
  * <p>
  * The {@link #add(int, int)} method should be used to fill this selector with
  * key-value pairs, then its {@link #keys()} and {@link #values()} functions may
  * be used to get the top k key-value pairs.
  * </p>
- * 
  * <p>
  * Note: key-value pairs returned by this selector are <b>not</b> ordered. They
  * are only guaranteed to be the <code>k</code> largest value elements.
@@ -23,25 +20,25 @@ import java.util.Arrays;
  * 
  * @author Gergely Kiss
  */
-public class IntSelector {
+public class IntFloatSelector {
 	int[] keys;
-	int[] vals;
+	float[] vals;
 	private int size = 0;
 
-	public IntSelector(int maxSize) {
+	public IntFloatSelector(int maxSize) {
 		keys = new int[maxSize];
-		vals = new int[maxSize];
+		vals = new float[maxSize];
 
 		Arrays.fill(keys, Integer.MIN_VALUE);
 	}
 
 	/**
-	 * Adds the int-int pair to the selector.
+	 * Adds the int-float pair to the selector.
 	 * 
 	 * @param key
 	 * @param val
 	 */
-	public void add(int key, int val) {
+	public void add(int key, float val) {
 		if (size == keys.length) {
 
 			// Shortcut for low values when the heap is full
@@ -62,7 +59,6 @@ public class IntSelector {
 
 	/**
 	 * Returns the keys.
-	 * 
 	 * <p>
 	 * Note: the backing array is returned, which may be larger than
 	 * {@link #size}.
@@ -76,7 +72,6 @@ public class IntSelector {
 
 	/**
 	 * Returns the values.
-	 * 
 	 * <p>
 	 * Note: the backing array is returned, which may be larger than
 	 * {@link #size}.
@@ -84,7 +79,7 @@ public class IntSelector {
 	 * 
 	 * @return
 	 */
-	public int[] values() {
+	public float[] values() {
 		return vals;
 	}
 
@@ -151,7 +146,7 @@ public class IntSelector {
 				keys[index] = minKey;
 
 				// Value swap
-				int minVal = vals[minindex];
+				float minVal = vals[minindex];
 				vals[minindex] = vals[index];
 				vals[index] = minVal;
 
@@ -170,9 +165,9 @@ public class IntSelector {
 	 * @param index
 	 */
 	private void siftUp(int index) {
-		int value;
+		float value;
 		int parentIndex;
-		int parentValue;
+		float parentValue;
 
 		while (index != 0) {
 			parentIndex = parentIndex(index);

@@ -80,26 +80,6 @@ public class StorageService {
 		log.info("Initialized {}/{} assoc stores successfully", assocStores, storeManager
 				.getConfiguredStores().size());
 
-		int groupedAssocStores = 0;
-
-		for (Entry<String, GroupedAssociationStore<?, ?>> en : storeManager
-				.getConfiguredGroupedStores().entrySet()) {
-			String serviceLoc = "groupedAssocs/" + en.getKey();
-
-			try {
-				ItemServer.bind(en.getValue(), serviceLoc);
-				groupedAssocStores++;
-				log.debug("Successfully initialized grouped assoc store at: {}", serviceLoc);
-			} catch (Exception e) {
-				log.error("Failed to initialize grouped assoc store: {} ({})", en.getKey(),
-						e.getLocalizedMessage());
-				log.debug("Failure trace", e);
-			}
-		}
-
-		log.info("Initialized {}/{} grouped assoc stores successfully", groupedAssocStores,
-				storeManager.getConfiguredGroupedStores().size());
-
 		// Publishing object storage
 		log.debug("Configuring object storage");
 
@@ -148,9 +128,14 @@ public class StorageService {
 						if (b == 'q') {
 							shutdown();
 						}
+
+						// Somehow system.in.read does not block on linux...
+						Thread.sleep(1000);
 					}
 				} catch (IOException e) {
 					log.error("Failed to read from System.in");
+				} catch (InterruptedException e) {
+					log.error("Console thread interrupted");
 				}
 			}
 		};

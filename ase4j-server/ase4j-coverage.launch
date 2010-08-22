@@ -9,7 +9,6 @@
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="ase4j-server"/>
 <stringAttribute key="org.eclipse.jdt.launching.SOURCE_PATH_PROVIDER" value="org.maven.ide.eclipse.launchconfig.sourcepathProvider"/>
 <mapAttribute key="org.testng.eclipse.ALL_CLASS_METHODS">
-<mapEntry key="org.ogreg.ase4j.AssociationUtilsTest" value=""/>
 <mapEntry key="org.ogreg.ase4j.GroupedAssociationStoreImplTest" value=""/>
 <mapEntry key="org.ogreg.ase4j.file.AssociationBlockTest" value=""/>
 <mapEntry key="org.ogreg.ase4j.file.CachedBlockStoreTest" value=""/>
@@ -20,6 +19,7 @@
 <mapEntry key="org.ogreg.fh4j.FileHashTest" value=""/>
 <mapEntry key="org.ogreg.ostore.file.FileObjectStoreImplTest" value=""/>
 <mapEntry key="org.ogreg.ostore.memory.StringStoreTest" value=""/>
+<mapEntry key="org.ogreg.util.ArrayUtilsTest" value=""/>
 <mapEntry key="org.ogreg.util.IntSelectorTest" value=""/>
 <mapEntry key="org.ogreg.util.TrieTest" value=""/>
 </mapAttribute>
@@ -30,8 +30,8 @@
 </listAttribute>
 <listAttribute key="org.testng.eclipse.GROUP_LIST_CLASS">
 <listEntry value="org.ogreg.ostore.memory.StringStoreTest"/>
-<listEntry value="org.ogreg.ase4j.AssociationUtilsTest"/>
 <listEntry value="org.ogreg.ase4j.file.CachedBlockStoreTest"/>
+<listEntry value="org.ogreg.util.ArrayUtilsTest"/>
 <listEntry value="org.ogreg.common.nio.NioUtilsTest"/>
 <listEntry value="org.ogreg.ase4j.file.FileAssociationStoreImplTest"/>
 <listEntry value="org.ogreg.fh4j.FileHashTest"/>

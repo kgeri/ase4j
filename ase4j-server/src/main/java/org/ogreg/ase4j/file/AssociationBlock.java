@@ -2,7 +2,7 @@ package org.ogreg.ase4j.file;
 
 import java.io.Serializable;
 
-import org.ogreg.ase4j.AssociationUtils;
+import org.ogreg.ase4j.AssociationStore.Operation;
 import org.ogreg.util.Arrays;
 
 /**
@@ -43,7 +43,7 @@ class AssociationBlock implements Serializable {
 	 * The <code>value</code>s of the associations. Has the same order as
 	 * {@link #tos}.
 	 */
-	int[] values;
+	float[] values;
 
 	// Helper fields
 	/** True, if the association row has changed (dirty flag for updating). */
@@ -60,15 +60,17 @@ class AssociationBlock implements Serializable {
 		this.from = from;
 
 		this.tos = new int[capacity];
-		this.values = new int[capacity];
+		this.values = new float[capacity];
 	}
 
 	/**
 	 * Merges all the associations from <code>value</code> to this row.
 	 * 
 	 * @param value
+	 * @param op The operation to use for adding associations
+	 * @return The number of new associations added
 	 */
-	public void merge(AssociationBlock value) {
+	public void merge(AssociationBlock value, Operation op) {
 
 		if (value.from != from) {
 			throw new IllegalArgumentException(
@@ -82,7 +84,7 @@ class AssociationBlock implements Serializable {
 		}
 
 		for (int i = 0; i < value.size; i++) {
-			merge(value.tos[i], value.values[i]);
+			merge(value.tos[i], value.values[i], op);
 		}
 	}
 
@@ -91,8 +93,9 @@ class AssociationBlock implements Serializable {
 	 * 
 	 * @param to
 	 * @param value
+	 * @param op The operation to use for adding associations
 	 */
-	public void merge(int to, int value) {
+	public void merge(int to, float value, Operation op) {
 
 		// Determining if to already exists
 		int tidx = Arrays.binarySearch(tos, 0, size, to);
@@ -113,7 +116,7 @@ class AssociationBlock implements Serializable {
 		}
 		// Update
 		else {
-			values[tidx] = AssociationUtils.update(values[tidx], value);
+			values[tidx] = op.calculate(values[tidx], value);
 			changed |= value != values[tidx];
 		}
 	}
@@ -124,7 +127,7 @@ class AssociationBlock implements Serializable {
 	 * @param to
 	 * @return
 	 */
-	public int get(int to) {
+	public float get(int to) {
 		int tidx = Arrays.binarySearch(tos, 0, size, to);
 
 		return (tidx < 0) ? 0 : values[tidx];
@@ -145,7 +148,7 @@ class AssociationBlock implements Serializable {
 		}
 
 		int[] ntos = new int[capacity];
-		int[] nvalues = new int[capacity];
+		float[] nvalues = new float[capacity];
 
 		System.arraycopy(tos, 0, ntos, 0, size);
 		System.arraycopy(values, 0, nvalues, 0, size);

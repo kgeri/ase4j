@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
+import org.ogreg.ase4j.AssociationStore.Operation;
 import org.ogreg.common.nio.NioUtils;
 import org.ogreg.test.FileTestSupport;
 import org.ogreg.test.TestUtils;
@@ -38,14 +39,14 @@ public class CachedBlockStoreBenchmark {
 			final AssociationBlock ar = new AssociationBlock(0);
 
 			for (int i = 0; i < 127; i++) {
-				ar.merge(i, 100);
+				ar.merge(i, 100, Operation.AVG);
 			}
 
 			Result r = TestUtils.measure(100000, new Measurement() {
 				@Override
 				public void run(int step) throws Exception {
 					ar.from = step;
-					fs.merge(ar);
+					fs.merge(ar, Operation.AVG);
 				}
 
 				@Override
@@ -85,7 +86,7 @@ public class CachedBlockStoreBenchmark {
 			final AssociationBlock ar = new AssociationBlock(0);
 
 			for (int i = 0; i < 127; i++) {
-				ar.merge(i, 100);
+				ar.merge(i, 100, Operation.AVG);
 			}
 
 			final Random rnd = new Random();
@@ -93,7 +94,7 @@ public class CachedBlockStoreBenchmark {
 				@Override
 				public void run(int iteration) throws Exception {
 					ar.from = rnd.nextInt(100000);
-					fs.merge(ar);
+					fs.merge(ar, Operation.AVG);
 				}
 
 				@Override

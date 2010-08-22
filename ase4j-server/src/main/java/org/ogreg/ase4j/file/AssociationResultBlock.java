@@ -24,7 +24,7 @@ class AssociationResultBlock implements QueryResult {
 	 * The <code>value</code>s of the associations. Has the same order as
 	 * {@link #tos}.
 	 */
-	int[] values;
+	float[] values;
 
 	/** The number of associations currently stored in the row. */
 	int size;
@@ -32,10 +32,10 @@ class AssociationResultBlock implements QueryResult {
 	public AssociationResultBlock(int size) {
 		this.size = size;
 		this.tos = new int[size];
-		this.values = new int[size];
+		this.values = new float[size];
 	}
 
-	public AssociationResultBlock(int[] tos, int[] values, int size) {
+	public AssociationResultBlock(int[] tos, float[] values, int size) {
 		this.size = size;
 		this.tos = tos;
 		this.values = values;

@@ -12,6 +12,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel.MapMode;
 import java.util.Arrays;
 
+import org.ogreg.ase4j.AssociationStore.Operation;
 import org.ogreg.test.FileTestSupport;
 import org.testng.annotations.Test;
 
@@ -34,16 +35,16 @@ public class AssociationBlockTest {
 		assertEquals(1, row.from);
 		assertEquals(0, row.size());
 		assertEquals("[0, 0, 0, 0]", Arrays.toString(row.tos));
-		assertEquals("[0, 0, 0, 0]", Arrays.toString(row.values));
+		assertEquals("[0.0, 0.0, 0.0, 0.0]", Arrays.toString(row.values));
 
-		row.merge(2, 100);
-		row.merge(1, 101);
-		row.merge(3, 100);
+		row.merge(2, 100, Operation.AVG);
+		row.merge(1, 101, Operation.AVG);
+		row.merge(3, 100, Operation.AVG);
 
 		assertEquals(1, row.from);
 		assertEquals(3, row.size());
 		assertEquals("[1, 2, 3, 0]", Arrays.toString(row.tos));
-		assertEquals("[101, 100, 100, 0]", Arrays.toString(row.values));
+		assertEquals("[101.0, 100.0, 100.0, 0.0]", Arrays.toString(row.values));
 	}
 
 	/**
@@ -55,20 +56,20 @@ public class AssociationBlockTest {
 		AssociationBlock row = new AssociationBlock(1);
 
 		assertEquals("[0, 0]", Arrays.toString(row.tos));
-		assertEquals("[0, 0]", Arrays.toString(row.values));
+		assertEquals("[0.0, 0.0]", Arrays.toString(row.values));
 
-		row.merge(1, 100);
-		row.merge(1, 100); // No change for coverage
-		row.merge(1, 200);
+		row.merge(1, 100, Operation.AVG);
+		row.merge(1, 100, Operation.AVG); // No change for coverage
+		row.merge(1, 200, Operation.AVG);
 
 		assertTrue(row.isChanged());
 		assertEquals(1, row.size());
 		assertEquals("[1, 0]", Arrays.toString(row.tos));
-		assertEquals("[150, 0]", Arrays.toString(row.values));
+		assertEquals("[150.0, 0.0]", Arrays.toString(row.values));
 
 		// Some gets for coverage
-		assertEquals(150, row.get(1));
-		assertEquals(0, row.get(0));
+		assertEquals(150.0F, row.get(1));
+		assertEquals(0.0F, row.get(0));
 	}
 
 	/**
@@ -80,13 +81,13 @@ public class AssociationBlockTest {
 		AssociationBlock row1 = new AssociationBlock(1);
 		AssociationBlock row2 = new AssociationBlock(1);
 
-		row1.merge(1, 100);
-		row2.merge(1, 200);
-		row1.merge(row2);
+		row1.merge(1, 100, Operation.AVG);
+		row2.merge(1, 200, Operation.AVG);
+		row1.merge(row2, Operation.AVG);
 
 		assertEquals(1, row1.size());
 		assertEquals("[1, 0]", Arrays.toString(row1.tos));
-		assertEquals("[150, 0]", Arrays.toString(row1.values));
+		assertEquals("[150.0, 0.0]", Arrays.toString(row1.values));
 	}
 
 	/**
@@ -99,7 +100,7 @@ public class AssociationBlockTest {
 		AssociationBlock row2 = new AssociationBlock(2);
 
 		try {
-			row1.merge(row2);
+			row1.merge(row2, Operation.AVG);
 
 			fail("Expected IllegalArgumentException");
 		} catch (IllegalArgumentException e) {
@@ -117,35 +118,35 @@ public class AssociationBlockTest {
 		assertEquals(1, row.from);
 		assertEquals(0, row.size());
 		assertEquals("[0, 0]", Arrays.toString(row.tos));
-		assertEquals("[0, 0]", Arrays.toString(row.values));
+		assertEquals("[0.0, 0.0]", Arrays.toString(row.values));
 
-		row.merge(2, 100);
-		row.merge(1, 101);
+		row.merge(2, 100, Operation.AVG);
+		row.merge(1, 101, Operation.AVG);
 
 		assertFalse(row.isGrown());
 
-		row.merge(3, 100);
+		row.merge(3, 100, Operation.AVG);
 
 		assertEquals(1, row.from);
 		assertEquals(3, row.size());
 		assertEquals(4, row.capacity());
 		assertTrue(row.isGrown());
 		assertEquals("[1, 2, 3, 0]", Arrays.toString(row.tos));
-		assertEquals("[101, 100, 100, 0]", Arrays.toString(row.values));
+		assertEquals("[101.0, 100.0, 100.0, 0.0]", Arrays.toString(row.values));
 	}
 
 	/**
 	 * Tests the row persistence.
 	 */
-	public void testPersist01() {
+	public void z_testPersist01() {
 
 		try {
 			AssociationBlock.baseCapacity = 2;
 
 			AssociationBlock row = new AssociationBlock(1);
 
-			row.merge(2, 100);
-			row.merge(1, 101);
+			row.merge(2, 100, Operation.AVG);
+			row.merge(1, 101, Operation.AVG);
 
 			File tmpFile = FileTestSupport.createTempFile("assoc.dat");
 
@@ -162,7 +163,7 @@ public class AssociationBlockTest {
 			assertEquals(2, row.size());
 			assertEquals(2, row.capacity());
 			assertEquals("[1, 2]", Arrays.toString(row.tos));
-			assertEquals("[101, 100]", Arrays.toString(row.values));
+			assertEquals("[101.0, 100.0]", Arrays.toString(row.values));
 		} catch (IOException e) {
 			e.printStackTrace();
 			fail(e.getLocalizedMessage());

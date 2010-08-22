@@ -4,7 +4,7 @@ import org.ogreg.common.dynamo.DynamicObject;
 import org.ogreg.common.dynamo.DynamicType;
 import org.ogreg.common.utils.MemoryUtils;
 
-import org.ogreg.util.IntSelector;
+import org.ogreg.util.IntFloatSelector;
 
 import org.testng.annotations.Test;
 
@@ -71,7 +71,7 @@ import java.util.Random;
             long before;
             before = System.currentTimeMillis();
 
-            IntSelector selector = new IntSelector(1000);
+            IntFloatSelector selector = new IntFloatSelector(1000);
 
             for (int i = 0; i < huge.length; i++) {
                 selector.add(i, huge[i]);

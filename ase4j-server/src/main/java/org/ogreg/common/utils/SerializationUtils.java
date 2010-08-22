@@ -1,5 +1,7 @@
 package org.ogreg.common.utils;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -30,7 +32,7 @@ public abstract class SerializationUtils {
 		InputStream is = null;
 
 		try {
-			is = new FileInputStream(in);
+			is = new BufferedInputStream(new FileInputStream(in));
 			return read(is, type);
 		} finally {
 			NioUtils.closeQuietly(is);
@@ -77,7 +79,7 @@ public abstract class SerializationUtils {
 
 		OutputStream os = null;
 		try {
-			os = new FileOutputStream(tmp);
+			os = new BufferedOutputStream(new FileOutputStream(tmp));
 			write(os, object);
 		} finally {
 			NioUtils.closeQuietly(os);

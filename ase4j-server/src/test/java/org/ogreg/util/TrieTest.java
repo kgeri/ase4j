@@ -34,7 +34,8 @@ public class TrieTest {
 			t.set(words.get(i), i);
 		}
 
-		List<String> w = t.getWords();
+		StringListCallback w = new StringListCallback();
+		t.getWords(w);
 		assertEquals(w.size(), words.size());
 
 		words.removeAll(w);
@@ -56,7 +57,8 @@ public class TrieTest {
 			t.set(words.get(i), i);
 		}
 
-		List<String> w = t.getWords();
+		StringListCallback w = new StringListCallback();
+		t.getWords(w);
 		assertEquals(w.size(), words.size());
 
 		words.removeAll(w);
@@ -113,5 +115,14 @@ public class TrieTest {
 		new Trie<Integer>().set("", 0);
 
 		new Trie<Integer>().set(new byte[0], 0);
+	}
+
+	class StringListCallback extends ArrayList<String> implements Callback<String> {
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public void callback(String value) {
+			add(value);
+		}
 	}
 }

@@ -69,4 +69,27 @@ public abstract class Arrays {
 		System.arraycopy(dest, pos, dest, pos + 1, length);
 		dest[pos] = src;
 	}
+
+	/**
+	 * Inserts <code>src</code> at <code>pos</code> in the array
+	 * <code>dest</code>.
+	 * <p>
+	 * The array may or may not be filled completely - the <code>length</code>
+	 * attribute specifies the number of filled elements (for optimization). If
+	 * the array is full, then the last element will be shifted out after the
+	 * insert.
+	 * </p>
+	 * 
+	 * @param dest
+	 * @param length
+	 * @param pos
+	 * @param src
+	 * @throws ArrayIndexOutOfBoundsException if pos >= length or pos >=
+	 *             dest.length or length or pos are negative
+	 */
+	public static void insert(float[] dest, int length, int pos, float src) {
+		length = (length >= dest.length) ? (dest.length - pos - 1) : (length - pos);
+		System.arraycopy(dest, pos, dest, pos + 1, length);
+		dest[pos] = src;
+	}
 }

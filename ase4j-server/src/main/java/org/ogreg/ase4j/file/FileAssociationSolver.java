@@ -1,14 +1,13 @@
 package org.ogreg.ase4j.file;
 
-import static org.ogreg.ase4j.AssociationUtils.update;
-
 import java.io.IOException;
 import java.util.List;
 
+import org.ogreg.ase4j.AssociationStore.Operation;
 import org.ogreg.ase4j.criteria.QueryExecutionException;
 import org.ogreg.ase4j.criteria.QuerySolver;
 import org.ogreg.ostore.ObjectStoreException;
-import org.ogreg.util.IntSelector;
+import org.ogreg.util.IntFloatSelector;
 
 /**
  * Association query solver for {@link AssociationBlock}s.
@@ -52,7 +51,7 @@ class FileAssociationSolver extends QuerySolver<AssociationResultBlock> {
 
 	@Override
 	protected AssociationResultBlock intersection(AssociationResultBlock valueA,
-			AssociationResultBlock valueB) {
+			AssociationResultBlock valueB, Operation op) {
 		int[] ta = valueA.tos;
 		int[] tb = valueB.tos;
 
@@ -75,7 +74,7 @@ class FileAssociationSolver extends QuerySolver<AssociationResultBlock> {
 				j++;
 			} else {
 				row.tos[cnt] = a;
-				row.values[cnt] = update(valueA.values[i], valueB.values[j]);
+				row.values[cnt] = op.calculate(valueA.values[i], valueB.values[j]);
 				cnt++;
 				i++;
 				j++;
@@ -131,7 +130,7 @@ class FileAssociationSolver extends QuerySolver<AssociationResultBlock> {
 
 	@Override
 	protected AssociationResultBlock union(AssociationResultBlock valueA,
-			AssociationResultBlock valueB) {
+			AssociationResultBlock valueB, Operation op) {
 		int[] ta = valueA.tos;
 		int[] tb = valueB.tos;
 
@@ -160,7 +159,7 @@ class FileAssociationSolver extends QuerySolver<AssociationResultBlock> {
 				j++;
 			} else {
 				row.tos[cnt] = a;
-				row.values[cnt] = update(valueA.values[i], valueB.values[j]);
+				row.values[cnt] = op.calculate(valueA.values[i], valueB.values[j]);
 				cnt++;
 				i++;
 				j++;
@@ -222,7 +221,7 @@ class FileAssociationSolver extends QuerySolver<AssociationResultBlock> {
 
 	@Override
 	protected AssociationResultBlock limit(AssociationResultBlock results, int limit) {
-		IntSelector selector = new IntSelector(limit);
+		IntFloatSelector selector = new IntFloatSelector(limit);
 
 		for (int i = 0; i < results.size; i++) {
 			selector.add(results.tos[i], results.values[i]);
