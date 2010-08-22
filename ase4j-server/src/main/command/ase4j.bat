@@ -1,0 +1,1 @@
+java -Xmx1024M -DdataDir=D:/temp/test/data -jar ase4j.jar
