@@ -17,229 +17,209 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-
 /**
  * Association storage service entry point.
- *
- * @author  Gergely Kiss
+ * 
+ * @author Gergely Kiss
  */
 public class StorageService {
-    private static final Logger log = LoggerFactory.getLogger(StorageService.class);
+	private static final Logger log = LoggerFactory.getLogger(StorageService.class);
 
-    private AssociationStoreManager storeManager;
-    private boolean running = false;
+	private AssociationStoreManager storeManager;
+	private boolean running = false;
 
-    public void start() throws Exception {
-        running = true;
+	public void start() throws Exception {
+		running = true;
 
-        log.info("Starting up storage...");
+		log.info("Starting up storage...");
 
-        // TODO PerformanceTimer - CJC maybe?
-        long before = System.currentTimeMillis();
+		// TODO PerformanceTimer - CJC maybe?
+		long before = System.currentTimeMillis();
 
-        // Reading configuration
-        String dataPath = System.getProperty("dataDir", "data");
-        String schemaPath = System.getProperty("schema", "schema.xml");
-        int rmiPort = Integer.getInteger("rmiPort", 1198);
+		// Reading configuration
+		String dataPath = System.getProperty("dataDir", "data");
+		String schemaPath = System.getProperty("schema", "schema.xml");
+		int rmiPort = Integer.getInteger("rmiPort", 1198);
 
-        File dataDir = new File(dataPath);
-        File schemaFile = new File(schemaPath);
+		File dataDir = new File(dataPath);
+		File schemaFile = new File(schemaPath);
 
-        // TODO check permissions?
-        log.debug("Using data dir: {}", dataDir);
+		// TODO check permissions?
+		log.debug("Using data dir: {}", dataDir);
 
-        // Initializing Cajo
-        Remote.config(null, rmiPort, null, 0);
+		// Initializing Cajo
+		Remote.config(null, rmiPort, null, 0);
 
-        // Initializing storage
-        // TODO Load multiple configs?
-        storeManager = new AssociationStoreManager();
-        storeManager.add(schemaFile);
-        storeManager.setDataDir(dataDir);
+		// Initializing storage
+		// TODO Load multiple configs?
+		storeManager = new AssociationStoreManager();
+		storeManager.add(schemaFile);
+		storeManager.setDataDir(dataDir);
 
-        // Publishing association storage
-        log.debug("Configuring association storage");
-        storeManager.configureAll();
+		// Publishing association storage
+		log.debug("Configuring association storage");
+		storeManager.configureAll();
 
-        int assocStores = 0;
+		int assocStores = 0;
 
-        for (Entry<String, AssociationStore<?, ?>> en :
-            storeManager.getConfiguredStores().entrySet()) {
-            String serviceLoc = "assocs/" + en.getKey();
+		for (Entry<String, AssociationStore<?, ?>> en : storeManager.getConfiguredStores()
+				.entrySet()) {
+			String serviceLoc = "assocs/" + en.getKey();
 
-            try {
-                ItemServer.bind(en.getValue(), serviceLoc);
-                assocStores++;
-                log.debug("Successfully initialized assoc store at: {}", serviceLoc);
-            } catch (Exception e) {
-                log.error("Failed to initialize assoc store: {} ({})", en.getKey(),
-                    e.getLocalizedMessage());
-                log.debug("Failure trace", e);
-            }
-        }
+			try {
+				ItemServer.bind(en.getValue(), serviceLoc);
+				assocStores++;
+				log.debug("Successfully initialized assoc store at: {}", serviceLoc);
+			} catch (Exception e) {
+				log.error("Failed to initialize assoc store: {} ({})", en.getKey(),
+						e.getLocalizedMessage());
+				log.debug("Failure trace", e);
+			}
+		}
 
-        log.info("Initialized {}/{} assoc stores successfully", assocStores,
-            storeManager.getConfiguredStores().size());
+		log.info("Initialized {}/{} assoc stores successfully", assocStores, storeManager
+				.getConfiguredStores().size());
 
-        int groupedAssocStores = 0;
+		// Publishing object storage
+		log.debug("Configuring object storage");
 
-        for (Entry<String, GroupedAssociationStore<?, ?>> en :
-            storeManager.getConfiguredGroupedStores().entrySet()) {
-            String serviceLoc = "groupedAssocs/" + en.getKey();
+		int objectStores = 0;
+		Map<String, ObjectStore<?>> ostores = storeManager.getObjectManager().getObjectStores();
 
-            try {
-                ItemServer.bind(en.getValue(), serviceLoc);
-                groupedAssocStores++;
-                log.debug("Successfully initialized grouped assoc store at: {}", serviceLoc);
-            } catch (Exception e) {
-                log.error("Failed to initialize grouped assoc store: {} ({})", en.getKey(),
-                    e.getLocalizedMessage());
-                log.debug("Failure trace", e);
-            }
-        }
+		for (Entry<String, ObjectStore<?>> en : ostores.entrySet()) {
+			String id = en.getKey();
+			String serviceLoc = "objects/" + id;
 
-        log.info("Initialized {}/{} grouped assoc stores successfully", groupedAssocStores,
-            storeManager.getConfiguredGroupedStores().size());
+			try {
+				ItemServer.bind(en.getValue(), serviceLoc);
+				objectStores++;
+				log.debug("Successfully initialized object store at: {}", serviceLoc);
+			} catch (Exception e) {
+				log.error("Failed to initialize object store: {} ({})", id, e.getLocalizedMessage());
+				log.debug("Failure trace", e);
+			}
+		}
 
-        // Publishing object storage
-        log.debug("Configuring object storage");
+		// TODO PerformanceTimer
+		long time = System.currentTimeMillis() - before;
+		log.info("Initialized {}/{} object stores successfully", objectStores, ostores.size());
 
-        int objectStores = 0;
-        Map<String, ObjectStore<?>> ostores = storeManager.getObjectManager().getObjectStores();
+		log.info("Startup completed in {} ms, waiting for requests", time);
 
-        for (Entry<String, ObjectStore<?>> en : ostores.entrySet()) {
-            String id = en.getKey();
-            String serviceLoc = "objects/" + id;
+		// Adding shutdown hook (Ctrl+C)
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				shutdown();
+			}
+		});
 
-            try {
-                ItemServer.bind(en.getValue(), serviceLoc);
-                objectStores++;
-                log.debug("Successfully initialized object store at: {}", serviceLoc);
-            } catch (Exception e) {
-                log.error("Failed to initialize object store: {} ({})", id,
-                    e.getLocalizedMessage());
-                log.debug("Failure trace", e);
-            }
-        }
+		// Starting console
+		Thread console = new Thread("Console") {
+			@Override
+			public void run() {
 
-        // TODO PerformanceTimer
-        long time = System.currentTimeMillis() - before;
-        log.info("Initialized {}/{} object stores successfully", objectStores, ostores.size());
+				try {
+					System.out.println("Enter 'q' or Ctrl+C to quit");
 
-        log.info("Startup completed in {} ms, waiting for requests", time);
+					while (running) {
+						int b = System.in.read();
 
-        // Adding shutdown hook (Ctrl+C)
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-                @Override public void run() {
-                    shutdown();
-                }
-            });
+						if (b == 'q') {
+							shutdown();
+						}
 
-        // Starting console
-        Thread console = new Thread("Console") {
-                @Override public void run() {
+						// Somehow system.in.read does not block on linux...
+						Thread.sleep(1000);
+					}
+				} catch (IOException e) {
+					log.error("Failed to read from System.in");
+				} catch (InterruptedException e) {
+					log.error("Console thread interrupted");
+				}
+			}
+		};
 
-                    try {
-                        System.out.println("Enter 'q' or Ctrl+C to quit");
+		console.setDaemon(true);
+		console.start();
 
-                        while (running) {
-                            int b = System.in.read();
+		while (running) {
+			Thread.sleep(100);
+		}
+	}
 
-                            if (b == 'q') {
-                                shutdown();
-                            }
+	public synchronized void shutdown() {
 
-                            // Somehow system.in.read does not block on linux...
-                            Thread.sleep(1000);
-                        }
-                    } catch (IOException e) {
-                        log.error("Failed to read from System.in");
-                    } catch (InterruptedException e) {
-                        log.error("Console thread interrupted");
-                    }
-                }
-            };
+		if (!running) {
+			return;
+		}
 
-        console.setDaemon(true);
-        console.start();
+		// TODO PerformanceTimer
+		long before = System.currentTimeMillis();
 
-        while (running) {
-            Thread.sleep(100);
-        }
-    }
+		log.debug("Shutting down assoc storage");
 
-    public synchronized void shutdown() {
+		Set<String> storeIds = new HashSet<String>(storeManager.getConfiguredStores().keySet());
 
-        if (!running) {
-            return;
-        }
+		for (String id : storeIds) {
 
-        // TODO PerformanceTimer
-        long before = System.currentTimeMillis();
+			try {
+				storeManager.flushStore(id);
+				log.debug("Successfully flushed assoc storage: {}", id);
+			} catch (Exception e) {
+				log.error("Failed to flush: {} ({}), trying to close", id, e.getLocalizedMessage());
+				log.debug("Failure trace", e);
+			}
 
-        log.debug("Shutting down assoc storage");
+			try {
+				storeManager.closeStore(id);
+				log.debug("Successfully closed assoc storage: {}", id);
+			} catch (Exception e) {
+				log.error("Failed to close: {} ({})", id, e.getLocalizedMessage());
+				log.debug("Failure trace", e);
+			}
+		}
 
-        Set<String> storeIds = new HashSet<String>(storeManager.getConfiguredStores().keySet());
+		log.debug("Shutting down object storage");
 
-        for (String id : storeIds) {
+		ObjectStoreManager objectManager = storeManager.getObjectManager();
+		Set<String> objectStoreIds = new HashSet<String>(objectManager.getObjectStores().keySet());
 
-            try {
-                storeManager.flushStore(id);
-                log.debug("Successfully flushed assoc storage: {}", id);
-            } catch (Exception e) {
-                log.error("Failed to flush: {} ({}), trying to close", id, e.getLocalizedMessage());
-                log.debug("Failure trace", e);
-            }
+		for (String id : objectStoreIds) {
 
-            try {
-                storeManager.closeStore(id);
-                log.debug("Successfully closed assoc storage: {}", id);
-            } catch (Exception e) {
-                log.error("Failed to close: {} ({})", id, e.getLocalizedMessage());
-                log.debug("Failure trace", e);
-            }
-        }
+			try {
+				objectManager.flushStore(id);
+				log.debug("Successfully flushed object storage: {}", id);
+			} catch (Exception e) {
+				log.error("Failed to flush: {} ({}), trying to close", id, e.getLocalizedMessage());
+				log.debug("Failure trace", e);
+			}
 
-        log.debug("Shutting down object storage");
+			try {
+				objectManager.closeStore(id);
+				log.debug("Successfully closed object storage: {}", id);
+			} catch (Exception e) {
+				log.error("Failed to close: {} ({})", id, e.getLocalizedMessage());
+				log.debug("Failure trace", e);
+			}
+		}
 
-        ObjectStoreManager objectManager = storeManager.getObjectManager();
-        Set<String> objectStoreIds = new HashSet<String>(objectManager.getObjectStores().keySet());
+		// TODO PerformanceTimer
+		long time = System.currentTimeMillis() - before;
+		log.info("Shutdown completed in {} ms. Bye!", time);
 
-        for (String id : objectStoreIds) {
+		// Shutting down RMI
+		Remote.shutdown();
 
-            try {
-                objectManager.flushStore(id);
-                log.debug("Successfully flushed object storage: {}", id);
-            } catch (Exception e) {
-                log.error("Failed to flush: {} ({}), trying to close", id, e.getLocalizedMessage());
-                log.debug("Failure trace", e);
-            }
+		running = false;
+	}
 
-            try {
-                objectManager.closeStore(id);
-                log.debug("Successfully closed object storage: {}", id);
-            } catch (Exception e) {
-                log.error("Failed to close: {} ({})", id, e.getLocalizedMessage());
-                log.debug("Failure trace", e);
-            }
-        }
+	public static void main(String[] args) {
 
-        // TODO PerformanceTimer
-        long time = System.currentTimeMillis() - before;
-        log.info("Shutdown completed in {} ms. Bye!", time);
-
-        // Shutting down RMI
-        Remote.shutdown();
-
-        running = false;
-    }
-
-    public static void main(String[] args) {
-
-        try {
-            new StorageService().start();
-        } catch (Throwable e) {
-            log.error("Unexpected storage failure", e);
-        }
-    }
+		try {
+			new StorageService().start();
+		} catch (Throwable e) {
+			log.error("Unexpected storage failure", e);
+		}
+	}
 }

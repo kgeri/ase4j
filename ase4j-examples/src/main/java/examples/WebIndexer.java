@@ -160,7 +160,7 @@ public class WebIndexer {
             assocs.add(new Association<String, DynamicObject>(token, null, 0.5F));
         }
 
-        store.addAll(assocs, doc);
+        store.addAll(assocs, doc, null);
 
         indexed++;
     }

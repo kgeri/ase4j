@@ -7,6 +7,7 @@ import java.nio.channels.FileChannel;
 import java.util.LinkedHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.ogreg.ase4j.AssociationStore.Operation;
 import org.ogreg.common.nio.BaseIndexedStore;
 import org.ogreg.common.nio.NioSerializer;
 import org.ogreg.common.nio.NioUtils;
@@ -66,9 +67,10 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 	 * </p>
 	 * 
 	 * @param assocs
+	 * @param op The operation to use for adding associations
 	 * @throws IOException in case of a storage failure
 	 */
-	public void merge(AssociationBlock assocs) throws IOException {
+	public void merge(AssociationBlock assocs, Operation op) throws IOException {
 		int from = assocs.from;
 
 		AssociationBlock oldAssocs = cache.get(from);
@@ -93,7 +95,7 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 
 		synchronized (oldAssocs) {
 			int oldSize = oldAssocs.size;
-			oldAssocs.merge(assocs);
+			oldAssocs.merge(assocs, op);
 			associationCount += oldAssocs.size - oldSize;
 		}
 	}

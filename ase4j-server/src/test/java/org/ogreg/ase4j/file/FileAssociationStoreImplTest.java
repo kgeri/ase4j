@@ -95,9 +95,9 @@ public class FileAssociationStoreImplTest {
 		simpleStore.setStorageFile(tf);
 		simpleStore.init();
 
-		simpleStore.add("a", "b", 1.0F);
-		simpleStore.add("b", "c", 0.5F);
-		simpleStore.add("c", "d", 0.1F);
+		simpleStore.add("a", "b", 1.0F, null);
+		simpleStore.add("b", "c", 0.5F, null);
+		simpleStore.add("c", "d", 0.1F, null);
 
 		// Flushing
 		simpleStore.flush();
@@ -141,7 +141,7 @@ public class FileAssociationStoreImplTest {
 		as.add(assoc("a", "e", 0.5F));
 		as.add(assoc("b", "d", 1.0F));
 
-		simpleStore.addAll(as);
+		simpleStore.addAll(as, null);
 
 		List<Association<String, String>> l1 = simpleStore
 				.query(new Query(Restrictions.phrase("a")).limit(10));
@@ -153,7 +153,7 @@ public class FileAssociationStoreImplTest {
 		assertEquals(l1.get(2).value, 0.5F);
 
 		as.add(assoc("e", "X", 5.0F));
-		simpleStore.addAll(as, "f");
+		simpleStore.addAll(as, "f", null);
 
 		List<Association<String, String>> l2 = simpleStore
 				.query(new Query(Restrictions.phrase("e")).limit(10));
@@ -181,7 +181,7 @@ public class FileAssociationStoreImplTest {
 		as.add(assoc("b", "d", 1.0F));
 		as.add(assoc("c", "e", 0.1F));
 
-		simpleStore.addAll(as);
+		simpleStore.addAll(as, null);
 
 		List<Association<String, String>> l;
 
@@ -190,7 +190,7 @@ public class FileAssociationStoreImplTest {
 				Restrictions.phrase("b"))).limit(10));
 		assertEquals(l.size(), 1);
 		assertEquals(l.get(0).to, "d");
-		assertEquals(l.get(0).value, 0.75F);
+		assertEquals(l.get(0).value, 1.5F);
 
 		// Simple AND query with limit
 		l = simpleStore.query(new Query(Restrictions.phrase("a")).limit(3));
@@ -235,7 +235,7 @@ public class FileAssociationStoreImplTest {
 		as.add(assoc("a", data("ddd", new Date(0), 30), 0.1F));
 		as.add(assoc("b", data("ddd", new Date(), 40), 1.0F));
 
-		objStore.addAll(as);
+		objStore.addAll(as, null);
 
 		List<Association<String, TestData>> l;
 

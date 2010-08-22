@@ -6,6 +6,7 @@ import static org.testng.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 
+import org.ogreg.ase4j.AssociationStore.Operation;
 import org.ogreg.common.nio.NioUtils;
 import org.ogreg.test.FileTestSupport;
 import org.testng.annotations.AfterMethod;
@@ -19,6 +20,7 @@ import org.testng.annotations.Test;
  */
 @Test(groups = "correctness")
 public class CachedBlockStoreTest {
+	private static final Operation OP = Operation.AVG;
 	private CachedBlockStore fs;
 
 	@BeforeMethod
@@ -64,7 +66,7 @@ public class CachedBlockStoreTest {
 
 			fs = new CachedBlockStore();
 			fs.open(store);
-			fs.merge(assoc(0, 1, 100));
+			fs.merge(assoc(0, 1, 100), OP);
 			fs.flush();
 
 			// For coverage
@@ -74,7 +76,7 @@ public class CachedBlockStoreTest {
 
 			fs = new CachedBlockStore();
 			fs.open(store);
-			fs.merge(assoc(0, 1, 100)); // For coverage
+			fs.merge(assoc(0, 1, 100), OP); // For coverage
 			fs.close();
 
 			fs = new CachedBlockStore();
@@ -97,19 +99,19 @@ public class CachedBlockStoreTest {
 
 			fs = new CachedBlockStore();
 			fs.open(store);
-			fs.merge(assoc(0, 1, 100));
-			fs.merge(assoc(0, 1, 200));
-			fs.merge(assoc(0, 2, 50));
-			fs.merge(assoc(0, 3, 50));
-			fs.merge(assoc(0, 4, 50));
-			fs.merge(assoc(0, 5, 50));
+			fs.merge(assoc(0, 1, 100), OP);
+			fs.merge(assoc(0, 1, 200), OP);
+			fs.merge(assoc(0, 2, 50), OP);
+			fs.merge(assoc(0, 3, 50), OP);
+			fs.merge(assoc(0, 4, 50), OP);
+			fs.merge(assoc(0, 5, 50), OP);
 
 			assertEquals(150, fs.get(0, 1));
 			assertEquals(50, fs.get(0, 2));
 
 			fs.flush();
 			fs.open(store);
-			fs.merge(assoc(0, 1, 50));
+			fs.merge(assoc(0, 1, 50), OP);
 			fs.flush();
 
 			assertEquals(100, fs.get(0, 1));
@@ -132,10 +134,10 @@ public class CachedBlockStoreTest {
 
 			fs = new CachedBlockStore();
 			fs.open(store);
-			fs.merge(assoc(0, 1, 10));
-			fs.merge(assoc(1, 1, 20));
+			fs.merge(assoc(0, 1, 10), OP);
+			fs.merge(assoc(1, 1, 20), OP);
 			// Testing storage holes also
-			fs.merge(assoc(3, 1, 40));
+			fs.merge(assoc(3, 1, 40), OP);
 
 			// Original size: 4 (AS4J) + 8 (size) + 4 (index capacity) + 4
 			// (index maxKey) + 4 * 8 (index entries) + 4 * (12 + 4 * 8)
@@ -143,8 +145,8 @@ public class CachedBlockStoreTest {
 			assertEquals(store.length(), 184);
 
 			// Growing will occur here
-			fs.merge(assoc(4, 1, 50));
-			fs.merge(assoc(2, 1, 30));
+			fs.merge(assoc(4, 1, 50), OP);
+			fs.merge(assoc(2, 1, 30), OP);
 
 			// Target size: 4 (AS4J) + 8 (size) + 4 (index capacity) + 4 (index
 			// maxKey) + 8 * 8 (index entries) + 5 * (12 + 4 * 8) (association
@@ -174,20 +176,20 @@ public class CachedBlockStoreTest {
 			fs = new CachedBlockStore();
 			fs.open(store);
 			fs.setMaxCached(2);
-			fs.merge(assoc(0, 1, 10));
-			fs.merge(assoc(1, 1, 20));
+			fs.merge(assoc(0, 1, 10), OP);
+			fs.merge(assoc(1, 1, 20), OP);
 
 			// Flushing will occur here
 
-			fs.merge(assoc(4, 1, 50));
-			fs.merge(assoc(5, 1, 60));
+			fs.merge(assoc(4, 1, 50), OP);
+			fs.merge(assoc(5, 1, 60), OP);
 
 			// Growing will occur here
-			fs.merge(assoc(2, 1, 30));
-			fs.merge(assoc(3, 1, 40));
+			fs.merge(assoc(2, 1, 30), OP);
+			fs.merge(assoc(3, 1, 40), OP);
 
 			// Flushing will occur here
-			fs.merge(assoc(6, 1, 70));
+			fs.merge(assoc(6, 1, 70), OP);
 
 			fs.flush();
 
@@ -205,7 +207,7 @@ public class CachedBlockStoreTest {
 
 	AssociationBlock assoc(int from, int to, int value) {
 		AssociationBlock assoc = new AssociationBlock(from);
-		assoc.merge(to, value);
+		assoc.merge(to, value, OP);
 
 		return assoc;
 	}

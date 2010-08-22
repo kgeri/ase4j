@@ -12,6 +12,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel.MapMode;
 import java.util.Arrays;
 
+import org.ogreg.ase4j.AssociationStore.Operation;
 import org.ogreg.test.FileTestSupport;
 import org.testng.annotations.Test;
 
@@ -36,9 +37,9 @@ public class AssociationBlockTest {
 		assertEquals("[0, 0, 0, 0]", Arrays.toString(row.tos));
 		assertEquals("[0, 0, 0, 0]", Arrays.toString(row.values));
 
-		row.merge(2, 100);
-		row.merge(1, 101);
-		row.merge(3, 100);
+		row.merge(2, 100, Operation.AVG);
+		row.merge(1, 101, Operation.AVG);
+		row.merge(3, 100, Operation.AVG);
 
 		assertEquals(1, row.from);
 		assertEquals(3, row.size());
@@ -57,9 +58,9 @@ public class AssociationBlockTest {
 		assertEquals("[0, 0]", Arrays.toString(row.tos));
 		assertEquals("[0, 0]", Arrays.toString(row.values));
 
-		row.merge(1, 100);
-		row.merge(1, 100); // No change for coverage
-		row.merge(1, 200);
+		row.merge(1, 100, Operation.AVG);
+		row.merge(1, 100, Operation.AVG); // No change for coverage
+		row.merge(1, 200, Operation.AVG);
 
 		assertTrue(row.isChanged());
 		assertEquals(1, row.size());
@@ -80,9 +81,9 @@ public class AssociationBlockTest {
 		AssociationBlock row1 = new AssociationBlock(1);
 		AssociationBlock row2 = new AssociationBlock(1);
 
-		row1.merge(1, 100);
-		row2.merge(1, 200);
-		row1.merge(row2);
+		row1.merge(1, 100, Operation.AVG);
+		row2.merge(1, 200, Operation.AVG);
+		row1.merge(row2, Operation.AVG);
 
 		assertEquals(1, row1.size());
 		assertEquals("[1, 0]", Arrays.toString(row1.tos));
@@ -99,7 +100,7 @@ public class AssociationBlockTest {
 		AssociationBlock row2 = new AssociationBlock(2);
 
 		try {
-			row1.merge(row2);
+			row1.merge(row2, Operation.AVG);
 
 			fail("Expected IllegalArgumentException");
 		} catch (IllegalArgumentException e) {
@@ -119,12 +120,12 @@ public class AssociationBlockTest {
 		assertEquals("[0, 0]", Arrays.toString(row.tos));
 		assertEquals("[0, 0]", Arrays.toString(row.values));
 
-		row.merge(2, 100);
-		row.merge(1, 101);
+		row.merge(2, 100, Operation.AVG);
+		row.merge(1, 101, Operation.AVG);
 
 		assertFalse(row.isGrown());
 
-		row.merge(3, 100);
+		row.merge(3, 100, Operation.AVG);
 
 		assertEquals(1, row.from);
 		assertEquals(3, row.size());
@@ -144,8 +145,8 @@ public class AssociationBlockTest {
 
 			AssociationBlock row = new AssociationBlock(1);
 
-			row.merge(2, 100);
-			row.merge(1, 101);
+			row.merge(2, 100, Operation.AVG);
+			row.merge(1, 101, Operation.AVG);
 
 			File tmpFile = FileTestSupport.createTempFile("assoc.dat");
 

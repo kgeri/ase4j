@@ -2,7 +2,7 @@ package org.ogreg.ase4j.file;
 
 import java.io.Serializable;
 
-import org.ogreg.ase4j.AssociationUtils;
+import org.ogreg.ase4j.AssociationStore.Operation;
 import org.ogreg.util.Arrays;
 
 /**
@@ -67,9 +67,10 @@ class AssociationBlock implements Serializable {
 	 * Merges all the associations from <code>value</code> to this row.
 	 * 
 	 * @param value
+	 * @param op The operation to use for adding associations
 	 * @return The number of new associations added
 	 */
-	public void merge(AssociationBlock value) {
+	public void merge(AssociationBlock value, Operation op) {
 
 		if (value.from != from) {
 			throw new IllegalArgumentException(
@@ -83,7 +84,7 @@ class AssociationBlock implements Serializable {
 		}
 
 		for (int i = 0; i < value.size; i++) {
-			merge(value.tos[i], value.values[i]);
+			merge(value.tos[i], value.values[i], op);
 		}
 	}
 
@@ -92,8 +93,9 @@ class AssociationBlock implements Serializable {
 	 * 
 	 * @param to
 	 * @param value
+	 * @param op The operation to use for adding associations
 	 */
-	public void merge(int to, int value) {
+	public void merge(int to, int value, Operation op) {
 
 		// Determining if to already exists
 		int tidx = Arrays.binarySearch(tos, 0, size, to);
@@ -114,7 +116,7 @@ class AssociationBlock implements Serializable {
 		}
 		// Update
 		else {
-			values[tidx] = AssociationUtils.update(values[tidx], value);
+			values[tidx] = op.calculate(values[tidx], value);
 			changed |= value != values[tidx];
 		}
 	}

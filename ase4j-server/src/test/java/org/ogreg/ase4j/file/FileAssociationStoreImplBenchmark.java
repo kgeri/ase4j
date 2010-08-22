@@ -60,7 +60,7 @@ public class FileAssociationStoreImplBenchmark {
             long before = System.currentTimeMillis();
 
             for (int i = 0; i < ITERATIONS; i++) {
-                store.add(words.get(i), words.get(ITERATIONS - i - 1), 1.0F);
+                store.add(words.get(i), words.get(ITERATIONS - i - 1), 1.0F, null);
             }
 
             long time = System.currentTimeMillis() - before;
@@ -86,7 +86,7 @@ public class FileAssociationStoreImplBenchmark {
             long before = System.currentTimeMillis();
 
             for (int i = 0; i < ITERATIONS; i++) {
-                store.add("alma", words.get(i), 1.0F);
+                store.add("alma", words.get(i), 1.0F, null);
             }
 
             long time = System.currentTimeMillis() - before;

@@ -39,9 +39,6 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
 	/** The configured and initialized association stores. */
 	private final Map<String, AssociationStore<?, ?>> assocStores = new HashMap<String, AssociationStore<?, ?>>();
 
-	/** The configured grouped association stores. */
-	private final Map<String, GroupedAssociationStore<?, ?>> groupedStores = new HashMap<String, GroupedAssociationStore<?, ?>>();
-
 	/** The object store manager. */
 	private final ObjectStoreManager objectStoreManager = new ObjectStoreManager();
 
@@ -74,12 +71,7 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
 	public void configureAll() {
 
 		for (Entry<String, StoreConfig> e : configuredStores.entrySet()) {
-
-			if (e.getValue() instanceof Group) {
-				getGroupedStore(e.getKey());
-			} else {
-				getStore(e.getKey());
-			}
+			getStore(e.getKey());
 		}
 	}
 
@@ -102,7 +94,15 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
 			return store;
 		}
 
-		ConfigurableAssociationStore cstore = createStore(id, getAssociatonStoreFile(dataDir, id));
+		// Checking for config
+		StoreConfig cfg = getStorageConfigFor(id);
+		AssociationStore cstore;
+
+		if (cfg instanceof Group) {
+			cstore = createGroupedStore(id);
+		} else {
+			cstore = createStore(id, getAssociatonStoreFile(dataDir, id));
+		}
 
 		assocStores.put(id, cstore);
 
@@ -110,55 +110,16 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
 	}
 
 	/**
-	 * Creates and opens a new association store group based on this
-	 * configuration, or returns an already initialized assoc store group
-	 * instance.
-	 * <p>
-	 * The object storage and other files will be created and opened.
-	 * </p>
+	 * Creates and opens a new association store based on this configuration, or
+	 * returns an already initialized assoc store instance.
 	 * 
-	 * @param id The id of the group
-	 * @return A newly initialized {@link GroupedAssociationStore}
+	 * @param id The id of the store
+	 * @param storageFile
+	 * @return A newly initialized {@link FileAssociationStoreImpl}
 	 * @throws ConfigurationException on storage init error
 	 */
-	@SuppressWarnings("rawtypes")
-	public GroupedAssociationStore getGroupedStore(String id) {
-		GroupedAssociationStore<?, ?> store = groupedStores.get(id);
-
-		if (store != null) {
-			return store;
-		}
-
-		// Checking for config
-		StoreConfig cfg = getStorageConfigFor(id);
-
-		// Creating the grouped store
-		GroupedAssociationStoreImpl gstore = new GroupedAssociationStoreImpl(this);
-
-		// Initializing the store
-		File groupDir = getGroupedStoreFile(dataDir, id);
-
-		try {
-			FileUtils.mkdirs(groupDir);
-		} catch (IOException e) {
-			throw new ConfigurationException(e);
-		}
-
-		gstore.init(id, groupDir);
-
-		// Setting metadata
-		ObjectStore from = getObjectStore(cfg.getFromStore());
-		ObjectStore to = getObjectStore(cfg.getToStore());
-		gstore.setMetadata(new AssociationStoreMetadata(from.getMetadata(), to.getMetadata()));
-
-		groupedStores.put(id, gstore);
-
-		return gstore;
-	}
-
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	ConfigurableAssociationStore createStore(String id, File storageFile) {
-
 		// Checking for config
 		StoreConfig cfg = getStorageConfigFor(id);
 
@@ -176,9 +137,49 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
 		cstore.setMetadata(new AssociationStoreMetadata(from.getMetadata(), to.getMetadata()));
 
 		// Registering as an MBean
-		MBeanUtils.register(cstore, id);
+		MBeanUtils.register(cstore, cfg.getId());
 
 		return cstore;
+	}
+
+	/**
+	 * Creates and opens a new association store group based on this
+	 * configuration, or returns an already initialized assoc store group
+	 * instance.
+	 * <p>
+	 * The object storage and other files will be created and opened.
+	 * </p>
+	 * 
+	 * @param id The id of the group
+	 * @return A newly initialized {@link GroupedAssociationStoreImpl}
+	 * @throws ConfigurationException on storage init error
+	 */
+	@SuppressWarnings("rawtypes")
+	AssociationStore createGroupedStore(String id) {
+
+		// Checking for config
+		StoreConfig cfg = getStorageConfigFor(id);
+
+		// Creating the grouped store
+		GroupedAssociationStoreImpl gstore = new GroupedAssociationStoreImpl(this);
+
+		// Initializing the store
+		File groupDir = getGroupedStoreFile(dataDir, cfg.getId());
+
+		try {
+			FileUtils.mkdirs(groupDir);
+		} catch (IOException e) {
+			throw new ConfigurationException(e);
+		}
+
+		gstore.init(cfg.getId(), groupDir);
+
+		// Setting metadata
+		ObjectStore from = getObjectStore(cfg.getFromStore());
+		ObjectStore to = getObjectStore(cfg.getToStore());
+		gstore.setMetadata(new AssociationStoreMetadata(from.getMetadata(), to.getMetadata()));
+
+		return gstore;
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -194,7 +195,6 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
 	 */
 	public synchronized void flushStore(String id) throws IOException {
 		Object store = assocStores.get(id);
-		store = (store == null) ? groupedStores.get(id) : store;
 
 		if (store instanceof Flushable) {
 			((Flushable) store).flush();
@@ -209,14 +209,12 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
 	 */
 	public synchronized void closeStore(String id) throws IOException {
 		Object store = assocStores.get(id);
-		store = (store == null) ? groupedStores.get(id) : store;
 
 		if (store instanceof Closeable) {
 			((Closeable) store).close();
 		}
 
 		assocStores.remove(id);
-		groupedStores.remove(id);
 	}
 
 	public ObjectStoreManager getObjectManager() {
@@ -230,15 +228,6 @@ public class AssociationStoreManager extends BaseJaxbManager<Associationstore> {
 	 */
 	public Map<String, AssociationStore<?, ?>> getConfiguredStores() {
 		return assocStores;
-	}
-
-	/**
-	 * Returns all the configured grouped association stores.
-	 * 
-	 * @return
-	 */
-	public Map<String, GroupedAssociationStore<?, ?>> getConfiguredGroupedStores() {
-		return groupedStores;
 	}
 
 	/**

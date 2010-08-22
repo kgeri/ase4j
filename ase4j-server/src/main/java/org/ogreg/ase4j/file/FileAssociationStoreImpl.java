@@ -19,6 +19,7 @@ import org.ogreg.ase4j.Association;
 import org.ogreg.ase4j.AssociationStoreException;
 import org.ogreg.ase4j.AssociationStoreMetadata;
 import org.ogreg.ase4j.ConfigurableAssociationStore;
+import org.ogreg.ase4j.Params;
 import org.ogreg.ase4j.criteria.Query;
 import org.ogreg.ase4j.criteria.QueryExecutionException;
 import org.ogreg.ostore.ObjectStore;
@@ -86,16 +87,18 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 	}
 
 	@Override
-	public void add(F from, T to, float value) throws AssociationStoreException {
+	public void add(F from, T to, float value, Params params) throws AssociationStoreException {
 
 		try {
+			Operation op = Params.ensureNotNull(params).op;
+
 			Long fi = fromStore.save(from);
 			Long ti = toStore.save(to);
 
 			AssociationBlock a = new AssociationBlock(fi.intValue());
-			a.merge(ti.intValue(), (int) (value * VALUE_MUL));
+			a.merge(ti.intValue(), (int) (value * VALUE_MUL), op);
 
-			assocs.merge(a);
+			assocs.merge(a, op);
 		} catch (IOException e) {
 			throw new AssociationStoreException(e);
 		} catch (ObjectStoreException e) {
@@ -104,9 +107,11 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 	}
 
 	@Override
-	public void addAll(Collection<Association<F, T>> froms, T to) throws AssociationStoreException {
+	public void addAll(Collection<Association<F, T>> froms, T to, Params params)
+			throws AssociationStoreException {
 
 		try {
+			Operation op = Params.ensureNotNull(params).op;
 			Long ti = toStore.save(to);
 
 			for (Association<F, ?> assoc : froms) {
@@ -116,9 +121,9 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 				int v = (int) (assoc.value * VALUE_MUL);
 
 				AssociationBlock a = new AssociationBlock(fi.intValue());
-				a.merge(ti.intValue(), v);
+				a.merge(ti.intValue(), v, op);
 
-				this.assocs.merge(a);
+				this.assocs.merge(a, op);
 			}
 		} catch (IOException e) {
 			throw new AssociationStoreException(e);
@@ -128,7 +133,8 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 	}
 
 	@Override
-	public void addAll(Collection<Association<F, T>> assocs) throws AssociationStoreException {
+	public void addAll(Collection<Association<F, T>> assocs, Params params)
+			throws AssociationStoreException {
 		Map<F, List<Association<F, T>>> byFrom = new HashMap<F, List<Association<F, T>>>(
 				assocs.size() / 2);
 
@@ -144,6 +150,7 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 		}
 
 		try {
+			Operation op = Params.ensureNotNull(params).op;
 
 			for (Entry<F, List<Association<F, T>>> e : byFrom.entrySet()) {
 				F from = e.getKey();
@@ -156,10 +163,10 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 					Long ti = toStore.save(assoc.to);
 
 					// TODO This could be more effective
-					a.merge(ti.intValue(), v);
+					a.merge(ti.intValue(), v, op);
 				}
 
-				this.assocs.merge(a);
+				this.assocs.merge(a, op);
 			}
 		} catch (IOException e) {
 			throw new AssociationStoreException(e);
