@@ -191,7 +191,7 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 
 		@Override
 		protected boolean removeEldestEntry(java.util.Map.Entry<Integer, AssociationBlock> eldest) {
-			boolean remove = size() > maxCached;
+			boolean remove = size() >= maxCached;
 
 			if (remove) {
 
