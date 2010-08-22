@@ -47,7 +47,7 @@ public class Query implements Serializable {
 	 * The default operation is {@link Operation#SUM}.
 	 * </p>
 	 */
-	final Params params;
+	Params params;
 
 	/**
 	 * Creates the query using the <code>select</code> as a selector.
@@ -128,5 +128,15 @@ public class Query implements Serializable {
 	 */
 	public Params params() {
 		return params;
+	}
+
+	/**
+	 * Sets the association parameters for this query.
+	 * 
+	 * @return
+	 */
+	public Query params(Params params) {
+		this.params = params;
+		return this;
 	}
 }
