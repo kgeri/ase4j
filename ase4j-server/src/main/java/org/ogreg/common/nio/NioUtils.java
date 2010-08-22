@@ -217,6 +217,23 @@ public abstract class NioUtils {
 	}
 
 	/**
+	 * Reads an integer from the channel at the current position.
+	 * 
+	 * @param channel
+	 * @param position
+	 * @return
+	 * @throws IOException
+	 */
+	public static final int readInt(FileChannel channel) throws IOException {
+		ByteBuffer singleBuf = ByteBuffer.allocate(4);
+
+		channel.read(singleBuf);
+		singleBuf.flip();
+
+		return singleBuf.getInt();
+	}
+
+	/**
 	 * Reads an integer from the channel at the specified position.
 	 * 
 	 * @param channel
@@ -231,6 +248,22 @@ public abstract class NioUtils {
 		singleBuf.flip();
 
 		return singleBuf.getInt();
+	}
+
+	/**
+	 * Writes an integer to the channel at the current position.
+	 * 
+	 * @param channel
+	 * @param value
+	 * @throws IOException
+	 */
+	public static final void writeInt(FileChannel channel, int value) throws IOException {
+		ByteBuffer singleBuf = ByteBuffer.allocate(4);
+
+		singleBuf.putInt(value);
+		singleBuf.flip();
+
+		channel.write(singleBuf);
 	}
 
 	/**

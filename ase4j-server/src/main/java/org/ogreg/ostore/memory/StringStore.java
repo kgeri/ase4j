@@ -1,6 +1,7 @@
 package org.ogreg.ostore.memory;
 
 import java.io.BufferedWriter;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -13,7 +14,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.ogreg.common.ConfigurationException;
 import org.ogreg.common.nio.NioUtils;
-import org.ogreg.common.utils.FileUtils;
 import org.ogreg.ostore.ConfigurableObjectStore;
 import org.ogreg.ostore.EntityAccessor;
 import org.ogreg.ostore.ObjectStore;
@@ -32,8 +32,9 @@ import org.ogreg.util.TrieSerializer.TrieSerializerListener;
  * 
  * @author Gergely Kiss
  */
-public class StringStore implements ConfigurableObjectStore<String>, StringStoreMBean, Serializable {
-	private static final long serialVersionUID = -6176261432587230445L;
+public class StringStore implements ConfigurableObjectStore<String>, Closeable, Serializable,
+		StringStoreMBean {
+	private static final long serialVersionUID = 4411880039656329960L;
 
 	private AtomicInteger nextKey;
 
@@ -46,29 +47,55 @@ public class StringStore implements ConfigurableObjectStore<String>, StringStore
 	/** The map to map Integers to Strings. */
 	private Map<Integer, byte[]> toString;
 
+	// Helper fields
+
 	/** The file which stores this instance. */
 	private transient File storageFile;
+
+	/** The file channel which stores this instance. */
+	private transient FileChannel storageChannel;
 
 	/** Storage metadata. */
 	private transient ObjectStoreMetadata metadata;
 
+	private transient TrieSerializer<Integer> serializer = new TrieSerializer<Integer>(
+			Integer.class);
+
 	@Override
 	public synchronized void init(EntityAccessor accessor, File storageDir,
 			Map<String, String> params) {
-		storageFile = ObjectStoreManager.getPropertyFile(storageDir, "strings");
+		try {
+			storageFile = ObjectStoreManager.getPropertyFile(storageDir, "strings");
+			boolean existed = storageFile.exists();
 
-		if (storageFile.exists()) {
-			try {
-				load();
-			} catch (IOException e) {
-				throw new ConfigurationException(e);
+			storageChannel = new RandomAccessFile(storageFile, "rw").getChannel();
+
+			if (existed) {
+				this.nextKey = new AtomicInteger(NioUtils.readInt(storageChannel));
+				this.toString = new HashMap<Integer, byte[]>();
+
+				Trie<Integer> trie = serializer.deserialize(storageChannel,
+						new TrieSerializerListener<Integer>() {
+							@Override
+							public void onEntryRead(byte[] key, Integer value) {
+								toString.put(value, key);
+							}
+						});
+
+				this.dictionary = trie.getDictionary();
+				this.toInt = trie;
+			} else {
+				String dictName = params.get("dictionary");
+				this.dictionary = TrieDictionary.createByName(dictName);
+				this.toInt = new Trie<Integer>(dictionary);
+				this.toString = new HashMap<Integer, byte[]>();
+				this.nextKey = new AtomicInteger(0);
+
+				NioUtils.writeInt(storageChannel, nextKey.intValue());
+				serializer.serialize(toInt, storageChannel);
 			}
-		} else {
-			String dictName = params.get("dictionary");
-			this.dictionary = TrieDictionary.createByName(dictName);
-			this.toInt = new Trie<Integer>(dictionary);
-			this.toString = new HashMap<Integer, byte[]>();
-			this.nextKey = new AtomicInteger(0);
+		} catch (IOException e) {
+			throw new ConfigurationException(e);
 		}
 	}
 
@@ -92,7 +119,7 @@ public class StringStore implements ConfigurableObjectStore<String>, StringStore
 	}
 
 	@Override
-	public void add(long identifier, String entity) throws ObjectStoreException {
+	public synchronized void add(long identifier, String entity) throws ObjectStoreException {
 		byte[] b = dictionary.encode(entity);
 		Integer id = Integer.valueOf((int) identifier);
 
@@ -104,6 +131,14 @@ public class StringStore implements ConfigurableObjectStore<String>, StringStore
 		int diff = (int) (identifier - nextKey.get());
 		if (diff >= 0) {
 			nextKey.addAndGet(diff + 1);
+		}
+
+		try {
+			// Appending to file channel immediately
+			storageChannel.position(storageChannel.size());
+			serializer.write(b, id, storageChannel);
+		} catch (IOException e) {
+			throw new ObjectStoreException(e);
 		}
 	}
 
@@ -136,7 +171,12 @@ public class StringStore implements ConfigurableObjectStore<String>, StringStore
 
 	@Override
 	public synchronized void flush() throws IOException {
-		save();
+		storageChannel.force(false);
+	}
+
+	@Override
+	public synchronized void close() throws IOException {
+		storageChannel.close();
 	}
 
 	@Override
@@ -167,55 +207,6 @@ public class StringStore implements ConfigurableObjectStore<String>, StringStore
 	@Override
 	public void setMetadata(ObjectStoreMetadata metadata) {
 		this.metadata = metadata;
-	}
-
-	private void load() throws IOException {
-		FileChannel channel = null;
-
-		try {
-			RandomAccessFile raf = new RandomAccessFile(storageFile, "r");
-			channel = raf.getChannel();
-
-			this.nextKey = NioUtils.deserializeFrom(channel, AtomicInteger.class);
-			this.toString = new HashMap<Integer, byte[]>();
-
-			TrieSerializer<Integer> serializer = new TrieSerializer<Integer>(Integer.class);
-			Trie<Integer> trie = serializer.deserialize(channel,
-					new TrieSerializerListener<Integer>() {
-						@Override
-						public void onEntryRead(byte[] key, Integer value) {
-							toString.put(value, key);
-						}
-					});
-
-			this.dictionary = trie.getDictionary();
-			this.toInt = trie;
-		} finally {
-			NioUtils.closeQuietly(channel);
-		}
-	}
-
-	private void save() throws IOException {
-		FileChannel channel = null;
-
-		// Safe serialization with renameTo
-		File tmp = File.createTempFile(storageFile.getName(), ".tmp", storageFile.getParentFile());
-
-		try {
-			RandomAccessFile raf = new RandomAccessFile(tmp, "rw");
-			channel = raf.getChannel();
-
-			NioUtils.serializeTo(channel, nextKey);
-
-			TrieSerializer<Integer> serializer = new TrieSerializer<Integer>(Integer.class);
-			serializer.serialize(toInt, channel);
-			channel.force(false);
-		} finally {
-			NioUtils.closeQuietly(channel);
-		}
-
-		FileUtils.renameTo(tmp, storageFile);
-		tmp.delete();
 	}
 
 	@Override

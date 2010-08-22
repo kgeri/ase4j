@@ -54,8 +54,9 @@ public class FileAssociationStoreImplTest {
 	public void setUp() throws Exception {
 
 		// Simple string based store
+		File dir = FileTestSupport.createTempDir("sstore");
 		sstore = new StringStore();
-		sstore.init(null, null, new HashMap<String, String>());
+		sstore.init(null, dir, new HashMap<String, String>());
 
 		// Object based store
 		ObjectStoreManager cfg = new ObjectStoreManager();
@@ -104,10 +105,11 @@ public class FileAssociationStoreImplTest {
 
 		// Flushing
 		simpleStore.flush();
+		sstore.flush();
 
 		// Closing
 		simpleStore.close();
-		SerializationUtils.write(indexFile, sstore);
+		sstore.close();
 
 		// Reopening
 		sstore = SerializationUtils.read(indexFile, StringStore.class);

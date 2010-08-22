@@ -153,6 +153,30 @@ public class TrieSerializer<T> {
 	}
 
 	/**
+	 * Appends the current key-value pair on the given channel.
+	 * 
+	 * @param key
+	 * @param value
+	 * @param dest
+	 * @throws IOException
+	 */
+	public synchronized void write(byte[] key, T value, FileChannel dest) throws IOException {
+		buf.clear();
+
+		// Writing key length
+		buf.putInt(key.length);
+
+		// Writing key
+		buf.put(key);
+
+		// Writing value
+		valueSerializer.serialize(value, buf);
+
+		buf.flip();
+		dest.write(buf);
+	}
+
+	/**
 	 * Writes the current node key and value in the following format:
 	 * <ul>
 	 * <li>int[1] node key length (n)
@@ -167,8 +191,7 @@ public class TrieSerializer<T> {
 	 * @throws BufferOverflowException if the key or value length is over 4096
 	 *             bytes
 	 */
-	private synchronized void write(TrieNodes prefix, TrieNode<T> node, FileChannel dest)
-			throws IOException {
+	private void write(TrieNodes prefix, TrieNode<T> node, FileChannel dest) throws IOException {
 
 		if (buf.remaining() < MAX_TRIENODE_SIZE) {
 			buf.flip();

@@ -41,8 +41,9 @@ public class StringStoreTest {
 	 * Tests some corner cases.
 	 */
 	public void testCoverage01() throws Exception {
+		File dir = FileTestSupport.createTempDir("sstore");
 		StringStore test = new StringStore();
-		test.init(null, null, new HashMap<String, String>());
+		test.init(null, dir, new HashMap<String, String>());
 
 		// For coverage
 		test.add(1, "aaa");
