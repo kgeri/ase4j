@@ -1,33 +1,11 @@
 package org.ogreg.ase4j.file;
 
-import org.ogreg.ase4j.Association;
-import org.ogreg.ase4j.AssociationStore.Operation;
-import org.ogreg.ase4j.Params;
-import org.ogreg.ase4j.TestData;
-import static org.ogreg.ase4j.TestData.*;
-import org.ogreg.ase4j.criteria.Query;
-import org.ogreg.ase4j.criteria.QueryExecutionException;
-import org.ogreg.ase4j.criteria.Restrictions;
-
-import org.ogreg.common.nio.NioUtils;
-import org.ogreg.common.utils.SerializationUtils;
-
-import org.ogreg.ostore.ObjectStore;
-import org.ogreg.ostore.ObjectStoreManager;
-import org.ogreg.ostore.memory.StringStore;
-
-import org.ogreg.test.FileTestSupport;
-
+import static org.ogreg.ase4j.TestData.data;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 import java.io.File;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -36,6 +14,22 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import org.ogreg.ase4j.Association;
+import org.ogreg.ase4j.AssociationStore.Operation;
+import org.ogreg.ase4j.Params;
+import org.ogreg.ase4j.TestData;
+import org.ogreg.ase4j.criteria.Query;
+import org.ogreg.ase4j.criteria.QueryExecutionException;
+import org.ogreg.ase4j.criteria.Restrictions;
+import org.ogreg.common.nio.NioUtils;
+import org.ogreg.ostore.ObjectStore;
+import org.ogreg.ostore.ObjectStoreManager;
+import org.ogreg.ostore.memory.StringStore;
+import org.ogreg.test.FileTestSupport;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 /**
  * Tests for the file based association store.
@@ -91,7 +85,6 @@ public class FileAssociationStoreImplTest {
 	 */
 	public void testInsert01() throws Exception {
 		File tf = FileTestSupport.createTempFile("assocs.idx");
-		File indexFile = FileTestSupport.createTempFile("index.idx");
 
 		simpleStore = new FileAssociationStoreImpl<String, String>();
 		simpleStore.setFromStore(sstore);
@@ -112,7 +105,9 @@ public class FileAssociationStoreImplTest {
 		sstore.close();
 
 		// Reopening
-		sstore = SerializationUtils.read(indexFile, StringStore.class);
+		File dir = new File("target/sstore");
+		sstore = new StringStore();
+		sstore.init(null, dir, new HashMap<String, String>());
 		simpleStore.setFromStore(sstore);
 		simpleStore.setToStore(sstore);
 		simpleStore.init();

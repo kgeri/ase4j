@@ -27,6 +27,8 @@ public class StringStoreTest {
 		store.add(1, "aaa");
 		store.add(2, "abc");
 		store.add(3, "aab");
+		store.save("aaa");
+		store.saveOrUpdate("abc");
 		store.flush();
 
 		store = new StringStore();
