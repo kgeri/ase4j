@@ -2,6 +2,7 @@ package org.ogreg.ase4j.file;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedHashMap;
@@ -133,7 +134,7 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 	 * @return
 	 * @throws IOException in case of a storage failure
 	 */
-	public int get(int from, int to) throws IOException {
+	public float get(int from, int to) throws IOException {
 		AssociationBlock assocs = get(from);
 
 		return (assocs == null) ? 0 : assocs.get(to);
@@ -220,12 +221,15 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 		@Override
 		public void serialize(AssociationBlock value, ByteBuffer dest) {
 			IntBuffer iview = dest.asIntBuffer();
+			FloatBuffer fview = dest.asFloatBuffer();
 
 			iview.put(value.capacity);
 			iview.put(value.size);
 			iview.put(value.from);
 			iview.put(value.tos);
-			iview.put(value.values);
+
+			fview.position(iview.position());
+			fview.put(value.values);
 
 			// Resetting changedness
 			value.changed = false;
@@ -235,6 +239,7 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 		@Override
 		public AssociationBlock deserialize(ByteBuffer source) {
 			IntBuffer iview = source.asIntBuffer();
+			FloatBuffer fview = source.asFloatBuffer();
 
 			int capacity = iview.get();
 			int size = iview.get();
@@ -243,7 +248,9 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 			AssociationBlock assocs = new AssociationBlock(capacity, size, from);
 
 			iview.get(assocs.tos);
-			iview.get(assocs.values);
+
+			fview.position(iview.position());
+			fview.get(assocs.values);
 
 			assocs.changed = false;
 

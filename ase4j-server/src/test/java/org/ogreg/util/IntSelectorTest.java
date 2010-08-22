@@ -27,7 +27,7 @@ public class IntSelectorTest {
 
 		shuffle(insert);
 
-		IntSelector h = new IntSelector(5);
+		IntFloatSelector h = new IntFloatSelector(5);
 
 		for (int i = 0; i < insert.length; i++) {
 			h.add(i, insert[i]);
@@ -35,38 +35,38 @@ public class IntSelectorTest {
 
 		Arrays.sort(h.vals);
 
-		assertEquals("[9995, 9996, 9997, 9998, 9999]", Arrays.toString(h.vals));
+		assertEquals(Arrays.toString(h.vals), "[9995.0, 9996.0, 9997.0, 9998.0, 9999.0]");
 	}
 
 	/**
 	 * Tests the case of not enough inserts.
 	 */
 	public void testInsert02() {
-		IntSelector h = new IntSelector(5);
+		IntFloatSelector h = new IntFloatSelector(5);
 		h.add(1, 1);
 		h.add(2, 2);
 		h.add(3, 3);
 
-		assertEquals("[1, 2, 3, 0, 0]", Arrays.toString(h.vals));
+		assertEquals(Arrays.toString(h.vals), "[1.0, 2.0, 3.0, 0.0, 0.0]");
 	}
 
 	/**
 	 * Tests the case of not enough inserts.
 	 */
 	public void testInsert03() {
-		IntSelector h = new IntSelector(5);
+		IntFloatSelector h = new IntFloatSelector(5);
 		h.add(1, 3);
 		h.add(2, 2);
 		h.add(3, 1);
 
-		assertEquals("[1, 3, 2, 0, 0]", Arrays.toString(h.vals));
+		assertEquals(Arrays.toString(h.vals), "[1.0, 3.0, 2.0, 0.0, 0.0]");
 	}
 
 	/**
 	 * Tests some coverage cases.
 	 */
 	public void testCoverage() {
-		IntSelector h = new IntSelector(5);
+		IntFloatSelector h = new IntFloatSelector(5);
 		h.keys();
 		h.values();
 	}

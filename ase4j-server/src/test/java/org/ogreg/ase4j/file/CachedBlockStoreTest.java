@@ -82,8 +82,8 @@ public class CachedBlockStoreTest {
 			fs = new CachedBlockStore();
 			fs.open(store);
 
-			assertEquals(100, fs.get(0, 1));
-			assertEquals(0, fs.get(1, 2));
+			assertEquals(fs.get(0, 1), 100.0F);
+			assertEquals(fs.get(1, 2), 0.0F);
 		} catch (IOException e) {
 			throw new AssertionError(e);
 		}
@@ -106,15 +106,15 @@ public class CachedBlockStoreTest {
 			fs.merge(assoc(0, 4, 50), OP);
 			fs.merge(assoc(0, 5, 50), OP);
 
-			assertEquals(150, fs.get(0, 1));
-			assertEquals(50, fs.get(0, 2));
+			assertEquals(fs.get(0, 1), 150.0F);
+			assertEquals(fs.get(0, 2), 50.0F);
 
 			fs.flush();
 			fs.open(store);
 			fs.merge(assoc(0, 1, 50), OP);
 			fs.flush();
 
-			assertEquals(100, fs.get(0, 1));
+			assertEquals(fs.get(0, 1), 100.0F);
 
 			// For coverage (finalizer)
 			fs = null;
@@ -155,11 +155,11 @@ public class CachedBlockStoreTest {
 
 			fs.flush();
 
-			assertEquals(fs.get(0, 1), 10);
-			assertEquals(fs.get(1, 1), 20);
-			assertEquals(fs.get(2, 1), 30);
-			assertEquals(fs.get(3, 1), 40);
-			assertEquals(fs.get(4, 1), 50);
+			assertEquals(fs.get(0, 1), 10.0F);
+			assertEquals(fs.get(1, 1), 20.0F);
+			assertEquals(fs.get(2, 1), 30.0F);
+			assertEquals(fs.get(3, 1), 40.0F);
+			assertEquals(fs.get(4, 1), 50.0F);
 		} catch (IOException e) {
 			throw new AssertionError(e);
 		}
@@ -193,13 +193,13 @@ public class CachedBlockStoreTest {
 
 			fs.flush();
 
-			assertEquals(10, fs.get(0, 1));
-			assertEquals(20, fs.get(1, 1));
-			assertEquals(30, fs.get(2, 1));
-			assertEquals(40, fs.get(3, 1));
-			assertEquals(50, fs.get(4, 1));
-			assertEquals(60, fs.get(5, 1));
-			assertEquals(70, fs.get(6, 1));
+			assertEquals(fs.get(0, 1), 10.0F);
+			assertEquals(fs.get(1, 1), 20.0F);
+			assertEquals(fs.get(2, 1), 30.0F);
+			assertEquals(fs.get(3, 1), 40.0F);
+			assertEquals(fs.get(4, 1), 50.0F);
+			assertEquals(fs.get(5, 1), 60.0F);
+			assertEquals(fs.get(6, 1), 70.0F);
 		} catch (IOException e) {
 			throw new AssertionError(e);
 		}

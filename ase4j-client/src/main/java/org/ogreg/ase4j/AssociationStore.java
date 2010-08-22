@@ -118,7 +118,7 @@ public interface AssociationStore<F, T> {
 		 */
 		AVG {
 			@Override
-			public int calculate(int oldValue, int newValue) {
+			public float calculate(float oldValue, float newValue) {
 				return (oldValue + newValue) / 2;
 			}
 		},
@@ -135,26 +135,25 @@ public interface AssociationStore<F, T> {
 		 */
 		SUM {
 			@Override
-			public int calculate(int oldValue, int newValue) {
+			public float calculate(float oldValue, float newValue) {
 				return oldValue + newValue;
 			}
 		},
 
 		/**
-		 * Exponential addition.
+		 * Logarithmic addition.
 		 * <p>
 		 * When an association already exists, the value be calculated as
 		 * follows:
 		 * </p>
 		 * <code>
-		 * v = exp() v<sub>n</sub>
+		 * v = ln( e<sup>v<sub>o</sub></sup> + v<sub>n</sub> - v<sub>o</sub>)
 		 * </code>
 		 */
-		EXPSUM {
+		LOGSUM {
 			@Override
-			public int calculate(int oldValue, int newValue) {
-				// TODO
-				return newValue;
+			public float calculate(float oldValue, float newValue) {
+				return (float) Math.log(Math.exp(oldValue) + newValue - oldValue);
 			}
 		},
 
@@ -170,12 +169,12 @@ public interface AssociationStore<F, T> {
 		 */
 		OVERWRITE {
 			@Override
-			public int calculate(int oldValue, int newValue) {
+			public float calculate(float oldValue, float newValue) {
 				return newValue;
 			}
 		};
 
-		public int calculate(int oldValue, int newValue) {
+		public float calculate(float oldValue, float newValue) {
 			throw new AbstractMethodError();
 		}
 	}

@@ -34,7 +34,6 @@ import org.ogreg.ostore.ObjectStoreException;
  */
 public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationStore<F, T>,
 		FileAssociationStoreImplMBean, Closeable, Flushable {
-	public static final float VALUE_MUL = 1000;
 
 	/** The index of the from entities. */
 	private ObjectStore<F> fromStore;
@@ -96,7 +95,7 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 			Long ti = toStore.save(to);
 
 			AssociationBlock a = new AssociationBlock(fi.intValue());
-			a.merge(ti.intValue(), (int) (value * VALUE_MUL), op);
+			a.merge(ti.intValue(), value, op);
 
 			assocs.merge(a, op);
 		} catch (IOException e) {
@@ -118,10 +117,8 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 				F from = assoc.from;
 				Long fi = fromStore.save(from);
 
-				int v = (int) (assoc.value * VALUE_MUL);
-
 				AssociationBlock a = new AssociationBlock(fi.intValue());
-				a.merge(ti.intValue(), v, op);
+				a.merge(ti.intValue(), assoc.value, op);
 
 				this.assocs.merge(a, op);
 			}
@@ -159,11 +156,10 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 				AssociationBlock a = new AssociationBlock(fi.intValue());
 
 				for (Association<F, T> assoc : e.getValue()) {
-					int v = (int) (assoc.value * VALUE_MUL);
 					Long ti = toStore.save(assoc.to);
 
 					// TODO This could be more effective
-					a.merge(ti.intValue(), v, op);
+					a.merge(ti.intValue(), assoc.value, op);
 				}
 
 				this.assocs.merge(a, op);
@@ -184,11 +180,11 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 
 		try {
 			int[] tos = results.tos;
-			int[] values = results.values;
+			float[] values = results.values;
 
 			for (int i = 0; i < results.size; i++) {
 				T to = toStore.get(tos[i]);
-				float value = (float) values[i] / VALUE_MUL;
+				float value = values[i];
 
 				ret.add(new Association<F, T>(null, to, value));
 			}

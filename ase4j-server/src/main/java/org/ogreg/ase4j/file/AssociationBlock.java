@@ -43,7 +43,7 @@ class AssociationBlock implements Serializable {
 	 * The <code>value</code>s of the associations. Has the same order as
 	 * {@link #tos}.
 	 */
-	int[] values;
+	float[] values;
 
 	// Helper fields
 	/** True, if the association row has changed (dirty flag for updating). */
@@ -60,7 +60,7 @@ class AssociationBlock implements Serializable {
 		this.from = from;
 
 		this.tos = new int[capacity];
-		this.values = new int[capacity];
+		this.values = new float[capacity];
 	}
 
 	/**
@@ -95,7 +95,7 @@ class AssociationBlock implements Serializable {
 	 * @param value
 	 * @param op The operation to use for adding associations
 	 */
-	public void merge(int to, int value, Operation op) {
+	public void merge(int to, float value, Operation op) {
 
 		// Determining if to already exists
 		int tidx = Arrays.binarySearch(tos, 0, size, to);
@@ -127,7 +127,7 @@ class AssociationBlock implements Serializable {
 	 * @param to
 	 * @return
 	 */
-	public int get(int to) {
+	public float get(int to) {
 		int tidx = Arrays.binarySearch(tos, 0, size, to);
 
 		return (tidx < 0) ? 0 : values[tidx];
@@ -148,7 +148,7 @@ class AssociationBlock implements Serializable {
 		}
 
 		int[] ntos = new int[capacity];
-		int[] nvalues = new int[capacity];
+		float[] nvalues = new float[capacity];
 
 		System.arraycopy(tos, 0, ntos, 0, size);
 		System.arraycopy(values, 0, nvalues, 0, size);

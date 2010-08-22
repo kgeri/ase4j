@@ -1,6 +1,8 @@
 package org.ogreg.ase4j.file;
 
 import org.ogreg.ase4j.Association;
+import org.ogreg.ase4j.AssociationStore.Operation;
+import org.ogreg.ase4j.Params;
 import org.ogreg.ase4j.TestData;
 import static org.ogreg.ase4j.TestData.*;
 import org.ogreg.ase4j.criteria.Query;
@@ -28,6 +30,7 @@ import java.io.File;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -160,6 +163,52 @@ public class FileAssociationStoreImplTest {
 
 		assertEquals(l2.get(0).value, 5.0F);
 		assertEquals(l2.get(0).to, "f");
+	}
+
+	/**
+	 * Tests different operation inserts.
+	 */
+	public void testInsert03() throws Exception {
+		File tf = FileTestSupport.createTempFile("assocs.idx");
+
+		simpleStore = new FileAssociationStoreImpl<String, String>();
+		simpleStore.setFromStore(sstore);
+		simpleStore.setToStore(sstore);
+		simpleStore.setStorageFile(tf);
+		simpleStore.init();
+
+		// Average
+		simpleStore.add("a", "b", 1.0F, new Params(Operation.AVG));
+		simpleStore.add("a", "b", 0.5F, new Params(Operation.AVG));
+
+		// Logarithmic sum
+		simpleStore.add("a", "c", 1.0F, new Params(Operation.LOGSUM));
+		simpleStore.add("a", "c", 0.5F, new Params(Operation.LOGSUM));
+
+		// Overwrite
+		simpleStore.add("a", "d", 1.0F, new Params(Operation.OVERWRITE));
+		simpleStore.add("a", "d", 0.5F, new Params(Operation.OVERWRITE));
+
+		// Sum
+		simpleStore.add("a", "e", 1.0F, new Params(Operation.SUM));
+		simpleStore.add("a", "e", 0.5F, new Params(Operation.SUM));
+
+		List<Association<String, String>> l1 = simpleStore
+				.query(new Query(Restrictions.phrase("a")));
+
+		// Sort by 'to'
+		Collections.sort(l1, new Comparator<Association<String, String>>() {
+			@Override
+			public int compare(Association<String, String> o1, Association<String, String> o2) {
+				return o1.to.compareTo(o2.to);
+			}
+		});
+
+		assertEquals(l1.size(), 4);
+		assertEquals(l1.get(0).value, 0.75F); // AVG
+		assertEquals(l1.get(1).value, 0.79673296F); // LOGSUM
+		assertEquals(l1.get(2).value, 0.5F); // OVERWRITE
+		assertEquals(l1.get(3).value, 1.5F); // SUM
 	}
 
 	/**
