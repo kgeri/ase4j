@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<associationstore xmlns="http://ase4j.googlecode.com/schema"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://ase4j.googlecode.com/schema ../../../../ase4j-server/src/main/resources/associationstore.xsd">
+
+	<!-- This is an empty example schema, please see the manual or associationstore.xsd 
+		for more examples. -->
+	<objects>
+		<store id="documents" mode="dynamic">
+			<class name="example.Document">
+				<id name="url" type="java.lang.String">
+					<index type="trie" />
+				</id>
+			</class>
+		</store>
+
+		<store id="subjects">
+			<class name="java.lang.String" />
+			<type type="org.ogreg.ostore.memory.StringStore" />
+		</store>
+	</objects>
+
+	<associations>
+		<store fromStore="subjects" toStore="documents" id="index" />
+	</associations>
+</associationstore>
