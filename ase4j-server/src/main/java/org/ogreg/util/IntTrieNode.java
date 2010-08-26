@@ -4,30 +4,30 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- * A trie node.
+ * A trie node storing ints.
  * 
  * @author Gergely Kiss
  * @see Trie
  */
-final class TrieNode<T> implements Serializable {
+final class IntTrieNode implements Serializable {
 	private static final long serialVersionUID = 7217023895828169766L;
 
-	final Trie<T> parent;
+	final IntTrie parent;
 	final int offset;
 	int count;
 
-	T value;
-	TrieNode<T>[] children = null;
+	int value;
+	IntTrieNode[] children = null;
 
-	TrieNode(Trie<T> parent, int offset, int count, T value) {
+	IntTrieNode(IntTrie parent, int offset, int count, int value) {
 		this.parent = parent;
 		this.offset = offset;
 		this.count = count;
 		this.value = value;
 	}
 
-	T get(byte[] word, int offset, int length) {
-		TrieNode<T> node = this;
+	int get(byte[] word, int offset, int length) {
+		IntTrieNode node = this;
 
 		byte[] contents = parent.contents;
 		int wordPos = 0;
@@ -37,11 +37,11 @@ final class TrieNode<T> implements Serializable {
 			int wps = pos + wordPos;
 
 			if (wps == length) {
-				return pos == node.count ? node.value : null;
+				return pos == node.count ? node.value : Integer.MIN_VALUE;
 			}
 
 			if (node.children == null) {
-				return null;
+				return Integer.MIN_VALUE;
 			}
 
 			int charPos = word[offset + wps];
@@ -50,12 +50,11 @@ final class TrieNode<T> implements Serializable {
 			wordPos = wps;
 		}
 
-		return null;
+		return Integer.MIN_VALUE;
 	}
 
-	@SuppressWarnings("unchecked")
-	void set(byte[] word, T value) {
-		TrieNode<T> node = this;
+	void set(byte[] word, int value) {
+		IntTrieNode node = this;
 
 		byte[] contents = parent.contents;
 		int wordPos = 0;
@@ -71,7 +70,7 @@ final class TrieNode<T> implements Serializable {
 				int charPos = word[wps];
 
 				if (node.children == null) {
-					node.children = new TrieNode[parent.maxChildren];
+					node.children = new IntTrieNode[parent.maxChildren];
 				}
 
 				if (node.children[charPos] == null) {
@@ -92,13 +91,13 @@ final class TrieNode<T> implements Serializable {
 					// ... and there are remaining chars - splitting the
 					// node (creating: a non-word prefix with two children)
 					if (pos < wordLen) {
-						TrieNode<T> child1 = parent.create(word, wps, value);
-						TrieNode<T> child2 = node.subtrie(pos, node.value);
+						IntTrieNode child1 = parent.create(word, wps, value);
+						IntTrieNode child2 = node.subtrie(pos, node.value);
 						child2.children = node.children;
 
 						node.count = pos; // Keeping the first half
-						node.value = null;
-						node.children = new TrieNode[parent.maxChildren];
+						node.value = Integer.MIN_VALUE;
+						node.children = new IntTrieNode[parent.maxChildren];
 						node.children[child1.byteAt(0)] = child1;
 						node.children[child2.byteAt(0)] = child2;
 					}
@@ -106,12 +105,12 @@ final class TrieNode<T> implements Serializable {
 					// (creating: a prefix which is the same as the new
 					// word, with one child)
 					else {
-						TrieNode<T> child2 = node.subtrie(pos, node.value);
+						IntTrieNode child2 = node.subtrie(pos, node.value);
 						child2.children = node.children;
 
 						node.count = pos; // Keeping the first half
 						node.value = value;
-						node.children = new TrieNode[parent.maxChildren];
+						node.children = new IntTrieNode[parent.maxChildren];
 						node.children[child2.byteAt(0)] = child2;
 					}
 				}
@@ -123,7 +122,7 @@ final class TrieNode<T> implements Serializable {
 						int charPos = word[wps];
 
 						if (node.children == null) {
-							node.children = new TrieNode[parent.maxChildren];
+							node.children = new IntTrieNode[parent.maxChildren];
 						}
 
 						if (node.children[charPos] == null) {
@@ -149,8 +148,8 @@ final class TrieNode<T> implements Serializable {
 		return parent.contents[offset + i];
 	}
 
-	private TrieNode<T> subtrie(int beginIndex, T value) {
-		return (beginIndex == 0) ? this : new TrieNode<T>(parent, offset + beginIndex, count
+	private IntTrieNode subtrie(int beginIndex, int value) {
+		return (beginIndex == 0) ? this : new IntTrieNode(parent, offset + beginIndex, count
 				- beginIndex, value);
 	}
 

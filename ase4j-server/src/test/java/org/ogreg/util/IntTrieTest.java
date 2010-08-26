@@ -10,18 +10,18 @@ import org.ogreg.test.TestUtils;
 import org.testng.annotations.Test;
 
 /**
- * Trie data structre tests.
+ * IntTrie data structre tests.
  * 
  * @author Gergely Kiss
  */
 @Test(groups = "correctness")
-public class TrieTest {
+public class IntTrieTest {
 
 	/**
 	 * Tests some simple trie inserts.
 	 */
 	public void testInsert01() {
-		Trie<Integer> t = new Trie<Integer>();
+		IntTrie t = new IntTrie();
 
 		List<String> words = new ArrayList<String>();
 		words.add("abab");
@@ -49,7 +49,7 @@ public class TrieTest {
 	 * Tests trie inserts.
 	 */
 	public void testInsert02() {
-		Trie<Integer> t = new Trie<Integer>();
+		IntTrie t = new IntTrie();
 
 		List<String> words = TestUtils.randomWords(1000, 31);
 
@@ -69,7 +69,7 @@ public class TrieTest {
 	 * Tests trie searches.
 	 */
 	public void testSearch01() {
-		Trie<Integer> t = new Trie<Integer>();
+		IntTrie t = new IntTrie();
 
 		List<String> words = TestUtils.randomWords(1000, 31);
 
@@ -79,7 +79,7 @@ public class TrieTest {
 
 		for (int i = 0; i < words.size(); i++) {
 			t.set(words.get(i), i);
-			assertEquals(Integer.valueOf(i), t.get(words.get(i)));
+			assertEquals(t.get(words.get(i)), i);
 		}
 
 		// For coverage
@@ -110,11 +110,11 @@ public class TrieTest {
 
 		TrieDictionary.EN.encode("á");
 
-		new Trie<Integer>().set(TrieDictionary.EN.encode("aaa"), 0);
+		new IntTrie().set(TrieDictionary.EN.encode("aaa"), 0);
 
-		new Trie<Integer>().set("", 0);
+		new IntTrie().set("", 0);
 
-		new Trie<Integer>().set(new byte[0], 0);
+		new IntTrie().set(new byte[0], 0);
 	}
 
 	class StringListCallback extends ArrayList<String> implements Callback<String> {

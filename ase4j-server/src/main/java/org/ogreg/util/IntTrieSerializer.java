@@ -10,18 +10,18 @@ import org.ogreg.common.nio.NioUtils;
 import org.ogreg.common.nio.serializer.SerializerManager;
 
 /**
- * A fast NIO-based {@link Trie} serializer.
+ * A fast NIO-based {@link IntTrie} serializer.
  * <p>
  * Since Java Serialization uses a HashMap when determining whether an instance
- * has been serialized or not, serializing a {@link Trie} which has many
- * {@link TrieNode}s may be very ineffective.
+ * has been serialized or not, serializing a {@link IntTrie} which has many
+ * {@link IntTrieNode}s may be very ineffective.
  * </p>
  * <p>
- * This implementation on the other hand iterates over all the {@link TrieNode}s
- * and determines and stores all the strings (actually byte arrays) this trie
- * represents. Similarly, deserialization means reading these strings and
- * rebuilding the whole {@link Trie} in memory. While it is much more redundant,
- * this approach has the following advantages:
+ * This implementation on the other hand iterates over all the
+ * {@link IntTrieNode}s and determines and stores all the strings (actually byte
+ * arrays) this trie represents. Similarly, deserialization means reading these
+ * strings and rebuilding the whole {@link IntTrie} in memory. While it is much
+ * more redundant, this approach has the following advantages:
  * <ul>
  * <li>It's a lot <b>faster</b>
  * <li>Uses <b>constant memory</b> while serializing and deserializing
@@ -31,8 +31,8 @@ import org.ogreg.common.nio.serializer.SerializerManager;
  * </ul>
  * </p>
  * <p>
- * Please note that for this to work, the type of the {@link Trie} must have a
- * {@link NioSerializer}.
+ * Please note that for this to work, the type of the {@link IntTrie} must have
+ * a {@link NioSerializer}.
  * </p>
  * <p>
  * Please note that the buffer limit is currently {@link #MAX_TRIENODE_SIZE}
@@ -45,19 +45,12 @@ import org.ogreg.common.nio.serializer.SerializerManager;
  * @author Gergely Kiss
  * @see SerializerManager
  */
-public class TrieSerializer<T> {
+public class IntTrieSerializer {
 	// The maximum size a trie node may occupy
 	private static final int MAX_TRIENODE_SIZE = 4096;
 
 	// Allocate 512k buffer
 	private final ByteBuffer buf = ByteBuffer.allocateDirect(512 * 1024);
-
-	/** The serializer for the trie's values. */
-	private final NioSerializer<T> valueSerializer;
-
-	public TrieSerializer(Class<T> valueType) {
-		this.valueSerializer = SerializerManager.findSerializerFor(valueType);
-	}
 
 	/**
 	 * Stores the given <code>trie</code> to the <code>channel</code>.
@@ -67,7 +60,7 @@ public class TrieSerializer<T> {
 	 * @param channel The target channel
 	 * @throws IOException on write error
 	 */
-	public synchronized void serialize(Trie<T> trie, FileChannel channel) throws IOException {
+	public synchronized void serialize(IntTrie trie, FileChannel channel) throws IOException {
 		NioUtils.serializeTo(channel, trie.dict);
 
 		buf.clear();
@@ -84,10 +77,10 @@ public class TrieSerializer<T> {
 	 * @return
 	 * @throws IOException on read error
 	 */
-	public synchronized Trie<T> deserialize(FileChannel channel, TrieSerializerListener<T> listener)
+	public synchronized IntTrie deserialize(FileChannel channel, IntTrieSerializerListener listener)
 			throws IOException {
 		TrieDictionary dict = NioUtils.deserializeFrom(channel, TrieDictionary.class);
-		Trie<T> trie = new Trie<T>(dict);
+		IntTrie trie = new IntTrie(dict);
 
 		buf.clear();
 		deserialize(trie, channel, listener);
@@ -102,13 +95,13 @@ public class TrieSerializer<T> {
 	 * @param dest
 	 * @throws IOException
 	 */
-	private void serialize(TrieNodes prefix, TrieNode<T> node, FileChannel dest) throws IOException {
+	private void serialize(TrieNodes prefix, IntTrieNode node, FileChannel dest) throws IOException {
 
-		if (node.value != null) {
+		if (node.value != Integer.MIN_VALUE) {
 			write(prefix, node, dest);
 		}
 
-		TrieNode<T>[] children = node.children;
+		IntTrieNode[] children = node.children;
 
 		if (children == null) {
 			return;
@@ -132,7 +125,7 @@ public class TrieSerializer<T> {
 	 * @param src
 	 * @throws IOException on read error
 	 */
-	private void deserialize(Trie<T> trie, FileChannel src, TrieSerializerListener<T> listener)
+	private void deserialize(IntTrie trie, FileChannel src, IntTrieSerializerListener listener)
 			throws IOException {
 
 		while (src.read(buf) != -1) {
@@ -160,7 +153,7 @@ public class TrieSerializer<T> {
 	 * @param dest
 	 * @throws IOException
 	 */
-	public synchronized void write(byte[] key, T value, FileChannel dest) throws IOException {
+	public synchronized void write(byte[] key, int value, FileChannel dest) throws IOException {
 		buf.clear();
 
 		// Writing key length
@@ -170,7 +163,7 @@ public class TrieSerializer<T> {
 		buf.put(key);
 
 		// Writing value
-		valueSerializer.serialize(value, buf);
+		buf.putInt(value);
 
 		buf.flip();
 		dest.write(buf);
@@ -191,7 +184,7 @@ public class TrieSerializer<T> {
 	 * @throws BufferOverflowException if the key or value length is over 4096
 	 *             bytes
 	 */
-	private void write(TrieNodes prefix, TrieNode<T> node, FileChannel dest) throws IOException {
+	private void write(TrieNodes prefix, IntTrieNode node, FileChannel dest) throws IOException {
 
 		if (buf.remaining() < MAX_TRIENODE_SIZE) {
 			buf.flip();
@@ -209,25 +202,25 @@ public class TrieSerializer<T> {
 
 		// Writing key
 		for (int i = 0; i < prefix.size; i++) {
-			TrieNode<?> pn = prefix.nodes[i];
+			IntTrieNode pn = prefix.nodes[i];
 			buf.put(pn.parent.contents, pn.offset, pn.count);
 		}
 		buf.put(node.parent.contents, node.offset, node.count);
 
 		// Writing value
-		valueSerializer.serialize(node.value, buf);
+		buf.putInt(node.value);
 	}
 
 	/**
 	 * Reads a node key and value in the format specified in
-	 * {@link #write(TrieNodes, TrieNode, FileChannel)}, then creates and adds a
-	 * new Trie node.
+	 * {@link #write(TrieNodes, IntTrieNode, FileChannel)}, then creates and
+	 * adds a new IntTrie node.
 	 * 
 	 * @param trie
 	 * @param listener
 	 * @throws IOException on channel read error
 	 */
-	private void read(Trie<T> trie, TrieSerializerListener<T> listener) throws IOException {
+	private void read(IntTrie trie, IntTrieSerializerListener listener) throws IOException {
 		// Reading key length
 		int n = buf.getInt();
 
@@ -236,21 +229,21 @@ public class TrieSerializer<T> {
 		buf.get(key);
 
 		// Reading value
-		T value = valueSerializer.deserialize(buf);
+		int value = buf.getInt();
 
 		// Adding trie entry
 		trie.set(key, value);
 		listener.onEntryRead(key, value);
 	}
 
-	// Fast TrieNode queue
+	// Fast IntTrieNode queue
 	private final class TrieNodes {
-		TrieNode<?>[] nodes = new TrieNode<?>[16];
+		IntTrieNode[] nodes = new IntTrieNode[16];
 		int size = 0;
 
-		public void push(TrieNode<?> node) {
+		public void push(IntTrieNode node) {
 			if (size >= nodes.length) {
-				TrieNode<?>[] copy = new TrieNode<?>[nodes.length * 2];
+				IntTrieNode[] copy = new IntTrieNode[nodes.length * 2];
 				System.arraycopy(nodes, 0, copy, 0, nodes.length);
 				nodes = copy;
 			}
@@ -263,9 +256,9 @@ public class TrieSerializer<T> {
 	}
 
 	// TODO Reconsider this... problem is that only the TrieSerializer has
-	// access to the TrieNode, but the StringStore also has to know when a new
-	// key-value pair has been red (to rebuild its index)
-	public interface TrieSerializerListener<T> {
-		void onEntryRead(byte[] key, T value);
+	// access to the IntTrieNode, but the StringStore also has to know when a
+	// new key-value pair has been red (to rebuild its index)
+	public interface IntTrieSerializerListener {
+		void onEntryRead(byte[] key, int value);
 	}
 }

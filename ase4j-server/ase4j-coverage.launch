@@ -21,6 +21,7 @@
 <mapEntry key="org.ogreg.ostore.memory.StringStoreTest" value=""/>
 <mapEntry key="org.ogreg.util.ArrayUtilsTest" value=""/>
 <mapEntry key="org.ogreg.util.IntSelectorTest" value=""/>
+<mapEntry key="org.ogreg.util.IntTrieTest" value=""/>
 <mapEntry key="org.ogreg.util.TrieTest" value=""/>
 </mapAttribute>
 <listAttribute key="org.testng.eclipse.CLASS_TEST_LIST"/>
@@ -39,8 +40,9 @@
 <listEntry value="org.ogreg.ase4j.file.FileAssociationSolverTest"/>
 <listEntry value="org.ogreg.ase4j.file.AssociationBlockTest"/>
 <listEntry value="org.ogreg.util.TrieTest"/>
-<listEntry value="org.ogreg.util.IntSelectorTest"/>
+<listEntry value="org.ogreg.util.IntTrieTest"/>
 <listEntry value="org.ogreg.ostore.file.FileObjectStoreImplTest"/>
+<listEntry value="org.ogreg.util.IntSelectorTest"/>
 <listEntry value="org.ogreg.common.nio.IndexEntriesTest"/>
 </listAttribute>
 <stringAttribute key="org.testng.eclipse.LOG_LEVEL" value="2"/>

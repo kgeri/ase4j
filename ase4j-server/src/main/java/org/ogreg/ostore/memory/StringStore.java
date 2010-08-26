@@ -22,10 +22,11 @@ import org.ogreg.ostore.ObjectStoreManager;
 import org.ogreg.ostore.ObjectStoreMetadata;
 import org.ogreg.ostore.index.UniqueIndex;
 import org.ogreg.util.Callback;
+import org.ogreg.util.IntTrie;
+import org.ogreg.util.IntTrieSerializer;
+import org.ogreg.util.IntTrieSerializer.IntTrieSerializerListener;
 import org.ogreg.util.Trie;
 import org.ogreg.util.TrieDictionary;
-import org.ogreg.util.TrieSerializer;
-import org.ogreg.util.TrieSerializer.TrieSerializerListener;
 
 /**
  * A simple {@link Trie}-based {@link ObjectStore} for storing {@link String}s.
@@ -42,7 +43,7 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 	private TrieDictionary dictionary;
 
 	/** The {@link Trie} to map Strings to integers. */
-	private Trie<Integer> toInt;
+	private IntTrie toInt;
 
 	/** The map to map Integers to Strings. */
 	private Map<Integer, byte[]> toString;
@@ -58,8 +59,7 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 	/** Storage metadata. */
 	private transient ObjectStoreMetadata metadata;
 
-	private transient TrieSerializer<Integer> serializer = new TrieSerializer<Integer>(
-			Integer.class);
+	private transient IntTrieSerializer serializer = new IntTrieSerializer();
 
 	@Override
 	public synchronized void init(EntityAccessor accessor, File storageDir,
@@ -74,10 +74,10 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 				this.nextKey = new AtomicInteger(NioUtils.readInt(storageChannel));
 				this.toString = new HashMap<Integer, byte[]>();
 
-				Trie<Integer> trie = serializer.deserialize(storageChannel,
-						new TrieSerializerListener<Integer>() {
+				IntTrie trie = serializer.deserialize(storageChannel,
+						new IntTrieSerializerListener() {
 							@Override
-							public void onEntryRead(byte[] key, Integer value) {
+							public void onEntryRead(byte[] key, int value) {
 								toString.put(value, key);
 							}
 						});
@@ -87,7 +87,7 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 			} else {
 				String dictName = params.get("dictionary");
 				this.dictionary = TrieDictionary.createByName(dictName);
-				this.toInt = new Trie<Integer>(dictionary);
+				this.toInt = new IntTrie(dictionary);
 				this.toString = new HashMap<Integer, byte[]>();
 				this.nextKey = new AtomicInteger(0);
 
@@ -101,16 +101,16 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 
 	@Override
 	public long save(String entity) throws ObjectStoreException {
-		Integer key = toInt.get(entity);
+		int key = toInt.get(entity);
 
-		if (key == null) {
+		if (key == Integer.MIN_VALUE) {
 			int nk = nextKey.incrementAndGet();
 			add(nk, entity);
 
 			return nk;
 		}
 
-		return key.intValue();
+		return key;
 	}
 
 	@Override
@@ -121,10 +121,9 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 	@Override
 	public synchronized void add(long identifier, String entity) throws ObjectStoreException {
 		byte[] b = dictionary.encode(entity);
-		Integer id = Integer.valueOf((int) identifier);
 
-		toInt.set(b, id);
-		toString.put(id, b);
+		toInt.set(b, (int) identifier);
+		toString.put((int) identifier, b);
 
 		// Does not guarantee that every identifier is always assigned, but is
 		// threadsafe
@@ -136,7 +135,7 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 		try {
 			// Appending to file channel immediately
 			storageChannel.position(storageChannel.size());
-			serializer.write(b, id, storageChannel);
+			serializer.write(b, (int) identifier, storageChannel);
 		} catch (IOException e) {
 			throw new ObjectStoreException(e);
 		}
@@ -164,9 +163,9 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 	public Long uniqueResult(String fieldName, Object value) throws ObjectStoreException {
 
 		// TODO Field name check?
-		Integer key = toInt.get((String) value);
+		int key = toInt.get((String) value);
 
-		return (key == null) ? null : Long.valueOf(key.longValue());
+		return (key == Integer.MIN_VALUE) ? null : Long.valueOf(key);
 	}
 
 	@Override
