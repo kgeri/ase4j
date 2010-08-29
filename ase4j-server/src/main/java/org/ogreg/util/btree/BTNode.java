@@ -1,8 +1,7 @@
 package org.ogreg.util.btree;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 
 /**
  * {@link BTree} node. May be initialized either as a leaf, or as an internal
@@ -12,35 +11,43 @@ import java.util.List;
  * @param<V> The type of the values
  * @author Gergely Kiss
  */
-final class BTNode<K extends Comparable<K>, V> {
+class BTNode<K extends Comparable<K>, V> {
 	/**
 	 * The keys of the node (with size of n if it's a leaf node, and n-1 if it's
 	 * an internal node).
 	 */
-	private List<K> keys = new ArrayList<K>();
+	K[] keys;
 
 	/**
 	 * The values of the leaf node (size of n), or null if it's an internal
 	 * node.
 	 */
-	private List<V> values = null;
+	V[] values = null;
 
 	/**
 	 * The children of the internal node (size of n), or null if it's a leaf
 	 * node.
 	 */
-	private List<BTNode<K, V>> children = null;
+	BTNode<K, V>[] children = null;
+
+	/** The currently used node values or children. */
+	private int size = 0;
 
 	/**
 	 * Creates a {@link BTree} node.
 	 * 
 	 * @param leaf If true, the node will be initialized as a leaf node
 	 */
+	@SuppressWarnings("unchecked")
 	public BTNode(boolean leaf) {
+		this.size = 0;
+
 		if (leaf) {
-			values = new ArrayList<V>();
+			keys = (K[]) new Comparable[4];
+			values = (V[]) new Object[4];
 		} else {
-			children = new ArrayList<BTNode<K, V>>();
+			keys = (K[]) new Comparable[3];
+			children = (BTNode<K, V>[]) new BTNode[4];
 		}
 	}
 
@@ -58,53 +65,61 @@ final class BTNode<K extends Comparable<K>, V> {
 		if (isLeaf()) {
 			BTNode<K, V> m = new BTNode<K, V>(true);
 
-			int ksize = keys.size();
-			int median = ksize / 2;
+			int median = size / 2;
 
-			m.keys.addAll(keys.subList(0, median));
-			m.values.addAll(values.subList(0, median));
-			keys = keys.subList(median, ksize);
-			values = values.subList(median, ksize);
+			m.keys = Arrays.copyOfRange(keys, 0, median);
+			m.values = Arrays.copyOfRange(values, 0, median);
+			m.size = median;
+
+			System.arraycopy(keys, median, keys, 0, size - median);
+			System.arraycopy(values, median, values, 0, size - median);
+			size = size - median;
 
 			return m;
 		} else {
 			BTNode<K, V> m = new BTNode<K, V>(false);
 
-			int ksize = keys.size();
+			int ksize = size - 1;
 			int kmedian = ksize / 2;
-
-			m.keys.addAll(keys.subList(0, kmedian));
-			keys = keys.subList(kmedian + 1, ksize);
-
-			int size = children.size();
 			int median = size / 2;
-			m.children.addAll(children.subList(0, median));
-			children = children.subList(median, size);
+
+			m.keys = Arrays.copyOfRange(keys, 0, kmedian);
+			m.children = Arrays.copyOfRange(children, 0, median);
+			m.size = median;
+
+			System.arraycopy(keys, kmedian + 1, keys, 0, ksize - kmedian - 1);
+			System.arraycopy(children, median, children, 0, size - median);
+			size = size - median;
 
 			return m;
 		}
 	}
 
 	/**
-	 * Returns this internal node's child at <code>idx</code>.
-	 * 
-	 * @param idx
-	 * @return
-	 * @throws NullPointerException if the node is a leaf node
-	 */
-	public BTNode<K, V> getChild(int idx) {
-		return children.get(idx);
-	}
-
-	/**
-	 * Adds the child <code>node</code> to this internal at <code>idx</code> .
+	 * Adds the child <code>node</code> to this internal node at
+	 * <code>idx</code> .
 	 * 
 	 * @param idx
 	 * @param node
 	 * @throws NullPointerException if the node is a leaf node
 	 */
 	public void addChild(int idx, BTNode<K, V> node) {
-		children.add(idx, node);
+		children = insert(children, size, idx, node);
+		size++;
+	}
+
+	/**
+	 * Adds the child <code>node</code> with <code>key</code>to this internal
+	 * node at <code>idx</code> .
+	 * 
+	 * @param idx
+	 * @param node
+	 * @throws NullPointerException if the node is a leaf node
+	 */
+	public void addChild(int idx, K key, BTNode<K, V> node) {
+		children = insert(children, size, idx, node);
+		keys = insert(keys, size - 1, idx, key);
+		size++;
 	}
 
 	/**
@@ -115,58 +130,13 @@ final class BTNode<K extends Comparable<K>, V> {
 	 * @return
 	 */
 	public int indexOf(K key) {
-		return Collections.binarySearch(keys, key);
-	}
-
-	/**
-	 * Returns the key at <code>idx</code>.
-	 * 
-	 * @param idx
-	 * @return
-	 */
-	public K getKey(int idx) {
-		return keys.get(idx);
-	}
-
-	/**
-	 * Returns the last key of this node.
-	 * 
-	 * @return
-	 */
-	public K getLastKey() {
-		return keys.get(keys.size() - 1);
-	}
-
-	/**
-	 * Adds a new key at <code>idx</code>.
-	 * 
-	 * @param idx
-	 * @param key
-	 */
-	public void addKey(int idx, K key) {
-		keys.add(idx, key);
-	}
-
-	/**
-	 * Returns this leaf's value at <code>idx</code>.
-	 * 
-	 * @param idx
-	 * @return
-	 * @throws NullPointerException if this is not a leaf node
-	 */
-	public V getValue(int idx) {
-		return values.get(idx);
-	}
-
-	/**
-	 * Sets this leaf's value at <code>idx</code>.
-	 * 
-	 * @param idx
-	 * @param value
-	 * @throws NullPointerException if this is not a leaf node
-	 */
-	public void setValue(int idx, V value) {
-		values.set(idx, value);
+		if (size == 0) {
+			return -1;
+		} else if (isLeaf()) {
+			return Arrays.binarySearch(keys, 0, size, key);
+		} else {
+			return Arrays.binarySearch(keys, 0, size - 1, key);
+		}
 	}
 
 	/**
@@ -179,8 +149,9 @@ final class BTNode<K extends Comparable<K>, V> {
 	 * @throws NullPointerException if this is not a leaf node
 	 */
 	public void addValue(int idx, K key, V value) {
-		keys.add(idx, key);
-		values.add(idx, value);
+		keys = insert(keys, size, idx, key);
+		values = insert(values, size, idx, value);
+		size++;
 	}
 
 	/**
@@ -190,7 +161,7 @@ final class BTNode<K extends Comparable<K>, V> {
 	 *         internal nodes
 	 */
 	public int size() {
-		return isLeaf() ? keys.size() : children.size();
+		return size;
 	}
 
 	protected String dump() {
@@ -203,24 +174,39 @@ final class BTNode<K extends Comparable<K>, V> {
 			StringBuilder buf = new StringBuilder();
 			buf.append("[");
 
-			for (int i = 0; i < keys.size(); i++) {
+			for (int i = 0; i < size; i++) {
 
 				if (i > 0) {
 					buf.append(", ");
 				}
 
-				buf.append(keys.get(i)).append("=").append(values.get(i));
+				buf.append(keys[i]).append("=").append(values[i]);
 			}
 
 			buf.append("]");
 
 			return buf.toString();
 		} else {
-			return children.toString();
+			return Arrays.toString(Arrays.copyOf(children, size));
 		}
 	}
 
 	public boolean isLeaf() {
 		return children == null;
+	}
+
+	@SuppressWarnings("unchecked")
+	static <T> T[] insert(T[] array, int size, int idx, T value) {
+		T[] newarr = array;
+
+		if (size + 1 > array.length) {
+			newarr = (T[]) Array.newInstance(array.getClass().getComponentType(), size + 1);
+			System.arraycopy(array, 0, newarr, 0, idx);
+		}
+
+		System.arraycopy(array, idx, newarr, idx + 1, size - idx);
+		newarr[idx] = value;
+
+		return newarr;
 	}
 }

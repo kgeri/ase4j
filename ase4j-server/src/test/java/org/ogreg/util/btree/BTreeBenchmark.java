@@ -22,12 +22,12 @@ public class BTreeBenchmark {
 	 * Tests the performance of the insert operation.
 	 */
 	public void testInsert01() {
-		BTree bt;
+		BTree<String, Integer> bt;
 		int cnt = 0;
 
 		{
 			Benchmark.start();
-			bt = new BTree(128);
+			bt = new BTree<String, Integer>(512);
 
 			for (String word : words) {
 				bt.set(word, cnt++);
@@ -37,12 +37,10 @@ public class BTreeBenchmark {
 
 			System.err.printf("BTree %d puts in: %d ms using %d Kb mem\n", ITERATIONS,
 					r.time(TimeUnit.MILLISECONDS), r.memory() / 1024);
-
 		}
 
 		{
 			Benchmark.start();
-			bt = new BTree(128);
 
 			for (String word : words) {
 				bt.get(word);
@@ -50,8 +48,8 @@ public class BTreeBenchmark {
 
 			Result r = Benchmark.stop();
 
-			System.err.printf("BTree %d gets in: %d ms using %d Kb mem\n", ITERATIONS,
-					r.time(TimeUnit.MILLISECONDS), r.memory() / 1024);
+			System.err.printf("BTree %d gets in: %d ms\n", ITERATIONS,
+					r.time(TimeUnit.MILLISECONDS));
 		}
 	}
 }

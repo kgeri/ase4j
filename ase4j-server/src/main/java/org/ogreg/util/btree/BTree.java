@@ -56,10 +56,10 @@ public class BTree<K extends Comparable<K>, V> {
 			int idx = node.indexOf(key);
 
 			if (node.isLeaf()) {
-				return (idx < 0) ? null : node.getValue(idx);
+				return (idx < 0) ? null : node.values[idx];
 			} else {
 				idx = (idx < 0) ? (-idx - 1) : idx;
-				node = node.getChild(idx);
+				node = node.children[idx];
 			}
 		}
 	}
@@ -112,12 +112,12 @@ public class BTree<K extends Comparable<K>, V> {
 			} else {
 
 				// Value update
-				node.setValue(idx, value);
+				node.values[idx] = value;
 			}
 		} else {
 			idx = (idx < 0) ? (-idx - 1) : idx;
 
-			BTNode<K, V> child = node.getChild(idx);
+			BTNode<K, V> child = node.children[idx];
 
 			// Splitting child if it is full
 			if (child.size() >= order) {
@@ -126,13 +126,13 @@ public class BTree<K extends Comparable<K>, V> {
 				// If the key to be inserted is greater than the split node's
 				// median, then we must insert the value in the next child
 				// (because a child was just now added at idx)
-				if (key.compareTo(node.getKey(idx)) > 0) {
-					child = node.getChild(idx + 1);
+				if (key.compareTo(node.keys[idx]) > 0) {
+					child = node.children[idx + 1];
 				}
 				// Otherwise we must still re-get the child at the calculated
 				// index
 				else {
-					child = node.getChild(idx);
+					child = node.children[idx];
 				}
 			}
 
@@ -155,18 +155,17 @@ public class BTree<K extends Comparable<K>, V> {
 		if (node.isLeaf()) {
 			// For leaf nodes, we need to propagate the rightmost key
 			BTNode<K, V> m = node.splitInHalf();
-			medKey = m.getLastKey();
+			medKey = m.keys[m.size() - 1];
 			newNode = m;
 		} else {
-			// For intermal nodes we need the median as the new key (also, it
+			// For intermal nodes we need to propagate the median key (also, it
 			// will be left out from left and right nodes)
-			medKey = node.getKey((node.size() - 1) / 2);
+			medKey = node.keys[(node.size() - 1) / 2];
 			BTNode<K, V> m = node.splitInHalf();
 			newNode = m;
 		}
 
 		// Propagating new node to parent
-		parent.addChild(idx, newNode);
-		parent.addKey(idx, medKey);
+		parent.addChild(idx, medKey, newNode);
 	}
 }
