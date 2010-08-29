@@ -1,0 +1,104 @@
+#!/bin/bash
+#
+#	/etc/rc.d/init.d/adwse
+#
+# Starts Adwse processes
+#
+# chkconfig: 345 95 5
+# description: Adwse
+# processname: adwse
+
+# Source function library.
+. /etc/init.d/functions
+
+AS_HOME=/data/as
+AS_USER=adwse
+AS_DATADIR=$AS_HOME/data
+AS_PIDFILE=/var/run/as.pid
+AS_OPTS=-Xmx1024M
+
+#
+#	See how we were called.
+#
+start() {
+	if test -f $AS_PIDFILE; then
+	    echo "Associative Storage already started: " $(cat $AS_PIDFILE) " ($AS_PIDFILE) !"
+	    exit 1
+	fi
+
+	echo -n $"Starting Associative Storage: "
+	cd $AS_HOME
+        sudo -u $AS_USER nohup java $AS_OPTS -DdataDir=$AS_DATADIR -jar ase4j.jar > as_std.out 2> as_std.err &
+        echo $! > $AS_PIDFILE
+
+	#A /var/lock/subsys mappába kerülnek azokhoz a processzekhez tartozó üres fájlok, amiket le kell állítani kikapcsolásnál/rebootolásnál.
+	#A fájl neve azonos a processzével. 
+	# Make lock for RedHat / SuSE
+	if test -w /var/lock/subsys
+	then
+		touch /var/lock/subsys/as
+	fi
+	
+	echo "done."
+}
+
+stop() {
+	if ! test -f  $AS_PIDFILE; then
+	    echo "Associative Storage not started and/or missing PID file: $AS_PIDFILE !"
+	    exit 1
+	fi
+
+	PID=$(cat $AS_PIDFILE)
+	echo -n $"Stopping Associative Storage ($PID): "
+	
+	#Leállításkor töröljük az as fájlt.
+	# Delete lock for RedHat / SuSE
+	if test -f /var/lock/subsys
+	then
+		rm -f /var/lock/subsys/as
+	fi
+	
+	kill -15 $PID
+	waitFor 5 $PID
+	kill -9 $PID
+	rm -f $AS_PIDFILE	
+}
+
+restart() {
+	stop
+	sleep 1s
+	start
+}
+
+# $1 mp várakozás a $2 PID-del rendelkező processz végéig
+function waitFor {
+    echo -n "Waiting for $2 to stop..."
+    for i in $(seq 1 $1)
+    do
+        PCNT=$(ps -eo pid | grep $2 | wc -l)
+        if [ "$PCNT" -eq 1 ]; then
+        echo "done."
+        break;
+	fi
+        sleep 1
+        echo -n "."
+    done
+}
+
+case "$1" in
+start)
+	start
+	;;
+stop)
+	stop
+	;;
+restart)
+	restart
+	;;
+*)
+	echo $"Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?
+
