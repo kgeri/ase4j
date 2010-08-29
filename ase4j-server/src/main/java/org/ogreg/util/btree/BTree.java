@@ -1,222 +1,172 @@
 package org.ogreg.util.btree;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-
 /**
- * An effective in-memory B+ tree implementation.
- *
- * @param   <T>  The type of the stored keys
- *
- * @author  Gergely Kiss
+ * A generic, effective in-memory B+ tree implementation.
+ * <p>
+ * This implementation is mostly based on <a href=
+ * "http://homepages.ius.edu/rwisman/C455/html/notes/Chapter18/BT-Ops.htm"
+ * >B-tree operations</a>. The implementation uses agressive node-splitting, to
+ * eliminate the complexity of key propagation.
+ * </p>
+ * <p>
+ * Please note that deletion is not yet implemented.
+ * </p>
+ * 
+ * @param <T> The type of the stored keys
+ * @author Gergely Kiss
  */
-public class BTree {
+public class BTree<K extends Comparable<K>, V> {
 
-    /** The order of the balanced tree. */
-    private final int order;
+	/** The order of the balanced tree. */
+	private final int order;
 
-    /** The tree's root. */
-    Node root;
+	/** The tree's root. */
+	BTNode<K, V> root;
 
-    public BTree(int order) {
+	/**
+	 * Constructs a BTree with the specified <code>order</code>.
+	 * <p>
+	 * The <code>order</code> of the tree shows how many children a
+	 * {@link BTNode} may have at most.
+	 * </p>
+	 * 
+	 * @param order
+	 */
+	public BTree(int order) {
 
-        if ((order < 4) || ((order % 2) != 0)) {
-            throw new IllegalArgumentException("Invalid order: " + order +
-                ". BTree must have an even order greater than 2.");
-        }
+		if ((order < 4) || ((order % 2) != 0)) {
+			throw new IllegalArgumentException("Invalid order: " + order
+					+ ". BTree must have an even order greater than 2.");
+		}
 
-        this.order = order;
-        root = new BTLeaf();
-    }
+		this.order = order;
+		root = new BTNode<K, V>(true);
+	}
 
-    /**
-     * Gets the value associated to the given key.
-     *
-     * @param   key
-     *
-     * @return  The value for the given key, or {@link Long#MIN_VALUE} if the key is not stored
-     */
-    public int get(String key) {
-        Node node = root;
+	/**
+	 * Gets the value associated to the given key.
+	 * 
+	 * @param key
+	 * @return The value for the given key, or null if the key is not stored
+	 */
+	public V get(K key) {
+		BTNode<K, V> node = root;
 
-        while (true) {
+		while (true) {
+			int idx = node.indexOf(key);
 
-            if (node instanceof BTLeaf) {
-                BTLeaf n = (BTLeaf) node;
+			if (node.isLeaf()) {
+				return (idx < 0) ? null : node.getValue(idx);
+			} else {
+				idx = (idx < 0) ? (-idx - 1) : idx;
+				node = node.getChild(idx);
+			}
+		}
+	}
 
-                int idx = Collections.binarySearch(n.keys, key);
+	/**
+	 * Sets the given value to the key.
+	 * 
+	 * @param key
+	 * @param value
+	 */
+	public void set(K key, V value) {
 
-                return (idx < 0) ? Integer.MIN_VALUE : n.values.get(idx);
-            } else {
-                BTNode n = (BTNode) node;
-                int idx = Collections.binarySearch(n.keys, key);
-                idx = (idx < 0) ? (-idx - 1) : idx;
+		if (root.size() >= order) {
+			// Splitting root
+			BTNode<K, V> node = root;
+			BTNode<K, V> newRoot = new BTNode<K, V>(false);
+			newRoot.addChild(0, node);
 
-                node = n.children.get(idx);
-            }
-        }
-    }
+			splitChildren(newRoot, 0, node);
+			setNonFull(newRoot, key, value);
 
-    /**
-     * Sets the given value to the key.
-     *
-     * @param  key
-     * @param  value
-     */
-    public void set(String key, int value) {
+			root = newRoot;
+		} else {
+			setNonFull(root, key, value);
+		}
+	}
 
-        if (root.size() >= order) {
-            Node node = root;
-            BTNode newRoot = new BTNode();
-            newRoot.children.add(node);
+	/**
+	 * Performs a key-value insert, assuming that no nodes are full below
+	 * <code>node</code>.
+	 * <p>
+	 * Sets the <code>value</code> on <code>key</code> recursively, agressively
+	 * splitting every full node while traversing down the tree.
+	 * </p>
+	 * 
+	 * @param node
+	 * @param key
+	 * @param value
+	 */
+	private void setNonFull(BTNode<K, V> node, K key, V value) {
+		int idx = node.indexOf(key);
 
-            splitChildren(newRoot, 0, node);
-            setNonFull(newRoot, key, value);
+		if (node.isLeaf()) {
+			// Inserting or updating node value if it's a leaf
+			if (idx < 0) {
+				idx = -idx - 1;
 
-            root = newRoot;
-        } else {
-            setNonFull(root, key, value);
-        }
-    }
+				// Value insert
+				node.addValue(idx, key, value);
+			} else {
 
-    private void setNonFull(Node node, String key, int value) {
+				// Value update
+				node.setValue(idx, value);
+			}
+		} else {
+			idx = (idx < 0) ? (-idx - 1) : idx;
 
-        if (node instanceof BTLeaf) {
-            BTLeaf n = (BTLeaf) node;
-            int idx = Collections.binarySearch(n.keys, key);
+			BTNode<K, V> child = node.getChild(idx);
 
-            if (idx < 0) {
-                idx = -idx - 1;
+			// Splitting child if it is full
+			if (child.size() >= order) {
+				splitChildren(node, idx, child);
 
-                // Value insert
-                insert(n.keys, idx, key);
-                insert(n.values, idx, value);
-            } else {
+				// If the key to be inserted is greater than the split node's
+				// median, then we must insert the value in the next child
+				// (because a child was just now added at idx)
+				if (key.compareTo(node.getKey(idx)) > 0) {
+					child = node.getChild(idx + 1);
+				}
+				// Otherwise we must still re-get the child at the calculated
+				// index
+				else {
+					child = node.getChild(idx);
+				}
+			}
 
-                // Value update
-                n.values.set(idx, value);
-            }
-        } else {
-            BTNode n = (BTNode) node;
-            int idx = Collections.binarySearch(n.keys, key);
-            idx = (idx < 0) ? (-idx - 1) : idx;
+			setNonFull(child, key, value);
+		}
+	}
 
-            Node child = n.children.get(idx);
+	/**
+	 * Splits the <code>node</code> in half.
+	 * 
+	 * @param parent The parent of <code>node</code>
+	 * @param idx The index at which <code>node</code> resides in its
+	 *            <code>parent</code>'s children list
+	 * @param node The node to split
+	 */
+	private void splitChildren(BTNode<K, V> parent, int idx, BTNode<K, V> node) {
+		BTNode<K, V> newNode;
+		K medKey;
 
-            if (child.size() >= order) {
-                splitChildren(n, idx, child);
+		if (node.isLeaf()) {
+			// For leaf nodes, we need to propagate the rightmost key
+			BTNode<K, V> m = node.splitInHalf();
+			medKey = m.getLastKey();
+			newNode = m;
+		} else {
+			// For intermal nodes we need the median as the new key (also, it
+			// will be left out from left and right nodes)
+			medKey = node.getKey((node.size() - 1) / 2);
+			BTNode<K, V> m = node.splitInHalf();
+			newNode = m;
+		}
 
-                // If the key to be inserted is greater than the split node's median, then we must
-                // insert the value in the next child (because a child was just now added at idx)
-                if (key.compareTo(n.keys.get(idx)) > 0) {
-                    child = n.children.get(idx + 1);
-                }
-                // Otherwise we must still re-get the child at the calculated idx
-                else {
-                    child = n.children.get(idx);
-                }
-            }
-
-            setNonFull(child, key, value);
-        }
-    }
-
-    private void splitChildren(BTNode parent, int idx, Node node) {
-        Node newNode;
-        String medKey;
-
-        if (node instanceof BTLeaf) {
-            BTLeaf n = (BTLeaf) node;
-            BTLeaf m = new BTLeaf();
-
-            int median = n.size() / 2;
-            m.keys.addAll(n.keys.subList(0, median));
-            m.values.addAll(n.values.subList(0, median));
-            n.keys = n.keys.subList(median, n.size());
-            n.values = n.values.subList(median, n.size());
-
-            newNode = m;
-            medKey = m.getLastKey();
-        } else {
-            BTNode n = (BTNode) node;
-            BTNode m = new BTNode();
-
-            int ksize = n.size() - 1;
-            int kmedian = ksize / 2;
-            medKey = n.keys.get(kmedian);
-
-            m.keys.addAll(n.keys.subList(0, kmedian));
-            n.keys = n.keys.subList(kmedian + 1, ksize);
-
-            int median = n.size() / 2;
-            m.children.addAll(n.children.subList(0, median));
-            n.children = n.children.subList(median, n.size());
-
-            newNode = m;
-        }
-
-        insert(parent.children, idx, newNode);
-        insert(parent.keys, idx, medKey);
-    }
-
-    private static <T> void insert(List<? super T> list, int idx, T value) {
-        list.add(idx, value);
-    }
-
-    static String dump(Node node) {
-        return (node instanceof BTLeaf) ? node.toString() : ((BTNode) node).children.toString();
-    }
-
-    // Base Node
-    abstract class Node {
-        public abstract int size();
-    }
-
-    // BT Inner node
-    private final class BTNode extends Node {
-        private List<String> keys = new ArrayList<String>();
-        private List<Node> children = new ArrayList<Node>();
-
-        public int size() {
-            return children.size();
-        }
-
-        @Override public String toString() {
-            return keys.toString();
-        }
-    }
-
-    // BT Leaf
-    private final class BTLeaf extends Node {
-        private List<String> keys = new ArrayList<String>();
-        private List<Integer> values = new ArrayList<Integer>();
-
-        public String getLastKey() {
-            return keys.get(keys.size() - 1);
-        }
-
-        public int size() {
-            return values.size();
-        }
-
-        @Override public String toString() {
-            StringBuilder buf = new StringBuilder();
-            buf.append("[");
-
-            for (int i = 0; i < keys.size(); i++) {
-
-                if (i > 0) {
-                    buf.append(", ");
-                }
-
-                buf.append(keys.get(i)).append("=").append(values.get(i));
-            }
-
-            buf.append("]");
-
-            return buf.toString();
-        }
-    }
+		// Propagating new node to parent
+		parent.addChild(idx, newNode);
+		parent.addKey(idx, medKey);
+	}
 }

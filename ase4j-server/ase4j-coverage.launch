@@ -19,10 +19,11 @@
 <mapEntry key="org.ogreg.fh4j.FileHashTest" value=""/>
 <mapEntry key="org.ogreg.ostore.file.FileObjectStoreImplTest" value=""/>
 <mapEntry key="org.ogreg.ostore.memory.StringStoreTest" value=""/>
-<mapEntry key="org.ogreg.util.ArrayUtilsTest" value=""/>
+<mapEntry key="org.ogreg.util.ArraysTest" value=""/>
 <mapEntry key="org.ogreg.util.IntSelectorTest" value=""/>
 <mapEntry key="org.ogreg.util.IntTrieTest" value=""/>
 <mapEntry key="org.ogreg.util.TrieTest" value=""/>
+<mapEntry key="org.ogreg.util.btree.BTreeTest" value=""/>
 </mapAttribute>
 <listAttribute key="org.testng.eclipse.CLASS_TEST_LIST"/>
 <stringAttribute key="org.testng.eclipse.COMPLIANCE_LEVEL" value="JDK"/>
@@ -32,7 +33,6 @@
 <listAttribute key="org.testng.eclipse.GROUP_LIST_CLASS">
 <listEntry value="org.ogreg.ostore.memory.StringStoreTest"/>
 <listEntry value="org.ogreg.ase4j.file.CachedBlockStoreTest"/>
-<listEntry value="org.ogreg.util.ArrayUtilsTest"/>
 <listEntry value="org.ogreg.common.nio.NioUtilsTest"/>
 <listEntry value="org.ogreg.ase4j.file.FileAssociationStoreImplTest"/>
 <listEntry value="org.ogreg.fh4j.FileHashTest"/>
@@ -41,9 +41,11 @@
 <listEntry value="org.ogreg.ase4j.file.AssociationBlockTest"/>
 <listEntry value="org.ogreg.util.TrieTest"/>
 <listEntry value="org.ogreg.util.IntTrieTest"/>
+<listEntry value="org.ogreg.util.ArraysTest"/>
 <listEntry value="org.ogreg.ostore.file.FileObjectStoreImplTest"/>
 <listEntry value="org.ogreg.util.IntSelectorTest"/>
 <listEntry value="org.ogreg.common.nio.IndexEntriesTest"/>
+<listEntry value="org.ogreg.util.btree.BTreeTest"/>
 </listAttribute>
 <stringAttribute key="org.testng.eclipse.LOG_LEVEL" value="2"/>
 <listAttribute key="org.testng.eclipse.PACKAGE_TEST_LIST"/>
