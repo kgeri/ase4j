@@ -1,5 +1,6 @@
 package org.ogreg.util.btree;
 
+import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 
@@ -11,7 +12,9 @@ import java.util.Arrays;
  * @param<V> The type of the values
  * @author Gergely Kiss
  */
-class BTNode<K extends Comparable<K>, V> {
+class BTNode<K extends Comparable<K>, V> implements Serializable {
+	private static final long serialVersionUID = 7765823881226901621L;
+
 	/**
 	 * The keys of the node (with size of n if it's a leaf node, and n-1 if it's
 	 * an internal node).
@@ -29,6 +32,16 @@ class BTNode<K extends Comparable<K>, V> {
 	 * node.
 	 */
 	BTNode<K, V>[] children = null;
+
+	/**
+	 * The right sibling of this leaf, or null if this node is an internal node.
+	 */
+	private BTNode<K, V> rightSibling = null;
+
+	/**
+	 * The left sibling of this leaf, or null if this node is an internal node.
+	 */
+	private BTNode<K, V> leftSibling = null;
 
 	/** The currently used node values or children. */
 	private int size = 0;
@@ -75,6 +88,14 @@ class BTNode<K extends Comparable<K>, V> {
 			System.arraycopy(values, median, values, 0, size - median);
 			size = size - median;
 
+			// Adjusting leaf sibling pointers after split
+			m.rightSibling = this;
+			if (leftSibling != null) {
+				m.leftSibling = leftSibling;
+				leftSibling.rightSibling = m;
+			}
+			leftSibling = m;
+
 			return m;
 		} else {
 			BTNode<K, V> m = new BTNode<K, V>(false);
@@ -101,7 +122,7 @@ class BTNode<K extends Comparable<K>, V> {
 	 * 
 	 * @param idx
 	 * @param node
-	 * @throws NullPointerException if the node is a leaf node
+	 * @throws NullPointerException if this node is a leaf node
 	 */
 	public void addChild(int idx, BTNode<K, V> node) {
 		children = insert(children, size, idx, node);
@@ -114,7 +135,7 @@ class BTNode<K extends Comparable<K>, V> {
 	 * 
 	 * @param idx
 	 * @param node
-	 * @throws NullPointerException if the node is a leaf node
+	 * @throws NullPointerException if this node is a leaf node
 	 */
 	public void addChild(int idx, K key, BTNode<K, V> node) {
 		children = insert(children, size, idx, node);
@@ -193,6 +214,14 @@ class BTNode<K extends Comparable<K>, V> {
 
 	public boolean isLeaf() {
 		return children == null;
+	}
+
+	public BTNode<K, V> getRightSibling() {
+		return rightSibling;
+	}
+
+	public BTNode<K, V> getLeftSibling() {
+		return leftSibling;
 	}
 
 	@SuppressWarnings("unchecked")

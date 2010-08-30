@@ -7,7 +7,9 @@ import static org.testng.Assert.fail;
 
 import org.testng.annotations.Test;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
 
 /**
  * Test for the B-Tree.
@@ -83,6 +85,31 @@ public class BTreeTest {
 		for (int i = 0; i < words.size(); i++) {
 			assertEquals(bt.get(words.get(i)), Integer.valueOf(i));
 		}
+	}
+
+	/**
+	 * Tests iteration with semi-random data.
+	 */
+	public void testIterator01() {
+		BTree<String, Integer> bt = new BTree<String, Integer>(4);
+		List<String> words = TestUtils.randomWords(256, 3);
+
+		for (int i = 0; i < words.size(); i++) {
+			bt.set(words.get(i), i);
+		}
+
+		Collections.sort(words);
+		StringBuilder expected = new StringBuilder();
+		for (int i = 0; i < words.size(); i++) {
+			expected.append(words.get(i)).append(',');
+		}
+
+		StringBuilder actual = new StringBuilder();
+		for (Entry<String, Integer> e : bt) {
+			actual.append(e.getKey()).append(',');
+		}
+
+		assertEquals(actual.toString(), expected.toString());
 	}
 
 	/**

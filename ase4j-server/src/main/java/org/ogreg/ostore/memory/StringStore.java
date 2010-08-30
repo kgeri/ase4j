@@ -9,11 +9,15 @@ import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.ogreg.common.ConfigurationException;
+import org.ogreg.common.nio.NioCollectionSerializer.SerializerListener;
 import org.ogreg.common.nio.NioUtils;
+import org.ogreg.common.nio.serializer.SerializerManager;
 import org.ogreg.ostore.ConfigurableObjectStore;
 import org.ogreg.ostore.EntityAccessor;
 import org.ogreg.ostore.ObjectStore;
@@ -21,15 +25,11 @@ import org.ogreg.ostore.ObjectStoreException;
 import org.ogreg.ostore.ObjectStoreManager;
 import org.ogreg.ostore.ObjectStoreMetadata;
 import org.ogreg.ostore.index.UniqueIndex;
-import org.ogreg.util.Callback;
-import org.ogreg.util.IntTrie;
-import org.ogreg.util.IntTrieSerializer;
-import org.ogreg.util.IntTrieSerializer.IntTrieSerializerListener;
-import org.ogreg.util.Trie;
-import org.ogreg.util.TrieDictionary;
+import org.ogreg.util.btree.BTree;
+import org.ogreg.util.btree.BTreeSerializer;
 
 /**
- * A simple {@link Trie}-based {@link ObjectStore} for storing {@link String}s.
+ * A simple {@link BTree}-based {@link ObjectStore} for storing {@link String}s.
  * 
  * @author Gergely Kiss
  */
@@ -39,14 +39,11 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 
 	private AtomicInteger nextKey;
 
-	/** The dictionary to use for storing properties. */
-	private TrieDictionary dictionary;
-
 	/** The {@link Trie} to map Strings to integers. */
-	private IntTrie toInt;
+	private BTree<String, Integer> toInt;
 
 	/** The map to map Integers to Strings. */
-	private Map<Integer, byte[]> toString;
+	private Map<Integer, String> toString;
 
 	// Helper fields
 
@@ -59,7 +56,9 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 	/** Storage metadata. */
 	private transient ObjectStoreMetadata metadata;
 
-	private transient IntTrieSerializer serializer = new IntTrieSerializer();
+	private transient BTreeSerializer<String, Integer> serializer = new BTreeSerializer<String, Integer>(
+			SerializerManager.findSerializerFor(String.class),
+			SerializerManager.findSerializerFor(Integer.class));
 
 	@Override
 	public synchronized void init(EntityAccessor accessor, File storageDir,
@@ -72,23 +71,21 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 
 			if (existed) {
 				this.nextKey = new AtomicInteger(NioUtils.readInt(storageChannel));
-				this.toString = new HashMap<Integer, byte[]>();
+				this.toString = new HashMap<Integer, String>();
 
-				IntTrie trie = serializer.deserialize(storageChannel,
-						new IntTrieSerializerListener() {
+				BTree<String, Integer> tree = serializer.deserialize(storageChannel,
+						new SerializerListener<Entry<String, Integer>>() {
 							@Override
-							public void onEntryRead(byte[] key, int value) {
-								toString.put(value, key);
+							public void onEntryRead(Entry<String, Integer> e) {
+								toString.put(e.getValue(), e.getKey());
 							}
 						});
 
-				this.dictionary = trie.getDictionary();
-				this.toInt = trie;
+				this.toInt = tree;
 			} else {
-				String dictName = params.get("dictionary");
-				this.dictionary = TrieDictionary.createByName(dictName);
-				this.toInt = new IntTrie(dictionary);
-				this.toString = new HashMap<Integer, byte[]>();
+				// TODO Parametric order
+				this.toInt = new BTree<String, Integer>(512);
+				this.toString = new HashMap<Integer, String>();
 				this.nextKey = new AtomicInteger(0);
 
 				NioUtils.writeInt(storageChannel, nextKey.intValue());
@@ -101,9 +98,9 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 
 	@Override
 	public long save(String entity) throws ObjectStoreException {
-		int key = toInt.get(entity);
+		Integer key = toInt.get(entity);
 
-		if (key == Integer.MIN_VALUE) {
+		if (key == null) {
 			int nk = nextKey.incrementAndGet();
 			add(nk, entity);
 
@@ -120,10 +117,8 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 
 	@Override
 	public synchronized void add(long identifier, String entity) throws ObjectStoreException {
-		byte[] b = dictionary.encode(entity);
-
-		toInt.set(b, (int) identifier);
-		toString.put((int) identifier, b);
+		toInt.set(entity, (int) identifier);
+		toString.put((int) identifier, entity);
 
 		// Does not guarantee that every identifier is always assigned, but is
 		// threadsafe
@@ -134,8 +129,9 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 
 		try {
 			// Appending to file channel immediately
+			// TODO BTree mmap?
 			storageChannel.position(storageChannel.size());
-			serializer.write(b, (int) identifier, storageChannel);
+			serializer.writeImmediately(entity, (int) identifier, storageChannel);
 		} catch (IOException e) {
 			throw new ObjectStoreException(e);
 		}
@@ -143,13 +139,7 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 
 	@Override
 	public String get(long identifier) throws ObjectStoreException {
-		byte[] b = toString.get(Integer.valueOf((int) identifier));
-
-		if (b == null) {
-			return null;
-		}
-
-		return dictionary.decode(b, 0, b.length);
+		return toString.get(Integer.valueOf((int) identifier));
 	}
 
 	@Override
@@ -163,9 +153,9 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 	public Long uniqueResult(String fieldName, Object value) throws ObjectStoreException {
 
 		// TODO Field name check?
-		int key = toInt.get((String) value);
+		Integer key = toInt.get((String) value);
 
-		return (key == Integer.MIN_VALUE) ? null : Long.valueOf(key);
+		return (key == null) ? null : Long.valueOf(key);
 	}
 
 	@Override
@@ -226,16 +216,10 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 			bw = new BufferedWriter(new FileWriter(file));
 			final BufferedWriter w = bw;
 
-			toInt.getWords(new Callback<String>() {
-				@Override
-				public void callback(String value) {
-					try {
-						w.append(value).append('\n');
-					} catch (IOException e) {
-						throw new IllegalStateException(e);
-					}
-				}
-			});
+			for (Iterator<Entry<String, Integer>> it = toInt.iterator(); it.hasNext();) {
+				Entry<String, Integer> e = it.next();
+				w.append(e.getKey()).append('\n');
+			}
 
 			bw.flush();
 		} catch (IllegalStateException e) {

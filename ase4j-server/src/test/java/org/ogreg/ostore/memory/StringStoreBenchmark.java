@@ -25,7 +25,7 @@ public class StringStoreBenchmark {
 	 * standard serialization.
 	 */
 	public void testSave01() throws Exception {
-		int ITERATIONS = 100000;
+		int ITERATIONS = 500000;
 		List<String> words = TestUtils.randomWords(ITERATIONS, 31);
 		File dir = FileTestSupport.createTempDir("sstore");
 		File file2 = FileTestSupport.createTempFile("sstore-2.ser");

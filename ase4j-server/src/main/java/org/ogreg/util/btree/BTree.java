@@ -1,5 +1,10 @@
 package org.ogreg.util.btree;
 
+import java.io.Serializable;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.Iterator;
+import java.util.Map.Entry;
+
 /**
  * A generic, effective in-memory B+ tree implementation.
  * <p>
@@ -11,14 +16,20 @@ package org.ogreg.util.btree;
  * <p>
  * Please note that deletion is not yet implemented.
  * </p>
+ * <p>
+ * Please note that despite this implementation is {@link Serializable}, it may
+ * be ineffective to use Java Serialization for loading and saving {@link BTree}
+ * s. For a fast, NIO-based solution please see {@link BTreeSerializer}.
+ * </p>
  * 
  * @param <T> The type of the stored keys
  * @author Gergely Kiss
  */
-public class BTree<K extends Comparable<K>, V> {
+public class BTree<K extends Comparable<K>, V> implements Serializable, Iterable<Entry<K, V>> {
+	private static final long serialVersionUID = 3002360634553150396L;
 
 	/** The order of the balanced tree. */
-	private final int order;
+	final int order;
 
 	/** The tree's root. */
 	BTNode<K, V> root;
@@ -85,6 +96,19 @@ public class BTree<K extends Comparable<K>, V> {
 		} else {
 			setNonFull(root, key, value);
 		}
+	}
+
+	@Override
+	public Iterator<Entry<K, V>> iterator() {
+		return new BTreeIterator(getFirstLeaf());
+	}
+
+	private BTNode<K, V> getFirstLeaf() {
+		BTNode<K, V> node = root;
+		while (!node.isLeaf()) {
+			node = node.children[0];
+		}
+		return node;
 	}
 
 	/**
@@ -167,5 +191,52 @@ public class BTree<K extends Comparable<K>, V> {
 
 		// Propagating new node to parent
 		parent.addChild(idx, medKey, newNode);
+	}
+
+	// BTree leaf (key-value) iterator
+	private final class BTreeIterator implements Iterator<Entry<K, V>> {
+		private BTNode<K, V> current;
+		private int pos = 0;
+		private Entry<K, V> entry;
+
+		public BTreeIterator(BTNode<K, V> current) {
+			this.current = current;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return readNext() != null;
+		}
+
+		@Override
+		public Entry<K, V> next() {
+			Entry<K, V> next = entry;
+			entry = null;
+			return next;
+		}
+
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+
+		private Entry<K, V> readNext() {
+			if (entry != null) {
+				return entry;
+			}
+
+			while (current != null) {
+				if (pos < current.size()) {
+					entry = new SimpleEntry<K, V>(current.keys[pos], current.values[pos]);
+					pos++;
+					return entry;
+				} else {
+					current = current.getRightSibling();
+					pos = 0;
+				}
+			}
+
+			return null;
+		}
 	}
 }
