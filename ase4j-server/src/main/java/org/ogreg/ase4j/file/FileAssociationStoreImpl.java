@@ -70,7 +70,7 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 		try {
 
 			if (fromStore == null) {
-				throw new AssertionError("The field fromIndex must be set");
+				throw new AssertionError("The field fromStore must be set");
 			} else if (toStore == null) {
 				throw new AssertionError("The field toStore must be set");
 			}
