@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import org.ogreg.ase4j.AssociationStoreException;
@@ -54,11 +55,12 @@ public class FileAssociationStoreImplBenchmark2 {
 			int ASSOCS = 1000000;
 
 			words = TestUtils.randomWords(WORDS, 31);
+			Random rnd = new Random();
 
 			Benchmark.start();
 
 			for (int i = 0; i < ASSOCS; i++) {
-				store.add(words.get(i % WORDS), words.get((ASSOCS - i) % WORDS), 1.0F, null);
+				store.add(words.get(rnd.nextInt(WORDS)), words.get(rnd.nextInt(WORDS)), 1.0F, null);
 			}
 
 			Result r = Benchmark.stop();

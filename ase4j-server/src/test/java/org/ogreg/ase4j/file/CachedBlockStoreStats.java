@@ -29,11 +29,13 @@ public class CachedBlockStoreStats {
 		Stats stats = BaseIndexedStoreStatsProvider.getStats(cbs);
 
 		System.out.printf("Statistics of %s:\n", file.getAbsolutePath());
-		System.out.printf(" Association blocks: \t%d b\n", stats.numEntries);
+		System.out.printf(" Association blocks: \t%d\n", stats.numEntries);
 		System.out.printf(" Unused index bytes: \t%d b\n", stats.unusedIndexBytes);
 		System.out.printf(" Unused entry bytes: \t%d b\n", stats.unusedEntryBytes);
 		System.out.printf(" Number of Entry holes: \t%d\n", stats.holes.size());
-		System.out.printf(" Average hole size: \t%.2f b\n", (double) stats.unusedEntryBytes
-				/ stats.holes.size());
+		if (stats.holes.size() > 0) {
+			System.out.printf(" Average hole size: \t%.2f b\n", (double) stats.unusedEntryBytes
+					/ stats.holes.size());
+		}
 	}
 }
