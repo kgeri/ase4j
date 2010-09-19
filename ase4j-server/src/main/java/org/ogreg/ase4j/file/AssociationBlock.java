@@ -157,6 +157,10 @@ class AssociationBlock implements Serializable {
 		values = nvalues;
 	}
 
+	public void clear() {
+		size = 0;
+	}
+
 	public int size() {
 		return size;
 	}
