@@ -44,7 +44,7 @@ public abstract class BaseIndexedStore<T> implements Closeable, Flushable {
 	private IndexEntries index = new IndexEntries();
 
 	/** The serializer implementation used to serialize the indexed entities. */
-	protected NioSerializer<T> serializer;
+	private NioSerializer<T> serializer;
 
 	/**
 	 * The implementation may provider its custom header deserialization code
@@ -405,5 +405,17 @@ public abstract class BaseIndexedStore<T> implements Closeable, Flushable {
 	@Override
 	protected void finalize() throws Throwable {
 		close();
+	}
+
+	FileChannel getStorageChannel() {
+		return storageChannel;
+	}
+
+	IndexEntries getIndex() {
+		return index;
+	}
+
+	NioSerializer<T> getSerializer() {
+		return serializer;
 	}
 }

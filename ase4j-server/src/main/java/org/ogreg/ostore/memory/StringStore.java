@@ -101,7 +101,7 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 		Integer key = toInt.get(entity);
 
 		if (key == null) {
-			int nk = nextKey.incrementAndGet();
+			int nk = nextKey.get();
 			add(nk, entity);
 
 			return nk;

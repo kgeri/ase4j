@@ -51,11 +51,15 @@ public class StringStoreTest {
 		test.add(1, "aaa");
 		test.save("ccc");
 		test.saveOrUpdate("ccc");
+		test.save("ddd");
+		test.add(5, "eee");
 
 		assertEquals(test.uniqueResult("", "aaa"), Long.valueOf(1));
 		assertEquals(test.uniqueResult("", "bbb"), null);
-		assertEquals(test.uniqueResult("", "ccc"), Long.valueOf(3));
+		assertEquals(test.uniqueResult("", "ccc"), Long.valueOf(2));
+		assertEquals(test.uniqueResult("", "ddd"), Long.valueOf(3));
+		assertEquals(test.uniqueResult("", "eee"), Long.valueOf(5));
 		assertEquals(test.get(10), null);
-		assertEquals(test.get(3), "ccc");
+		assertEquals(test.get(2), "ccc");
 	}
 }

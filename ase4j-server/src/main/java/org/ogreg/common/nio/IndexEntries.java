@@ -30,7 +30,7 @@ import java.nio.channels.FileChannel.MapMode;
 final class IndexEntries {
 
 	// Header offset (the header contains the index capacity and maxKey)
-	private static final int ENTRY_OFFSET = 4 + 4;
+	static final int ENTRY_OFFSET = 4 + 4;
 
 	// Base capacity of the newly created indices
 	private static int baseCapacity = 1024;
@@ -43,6 +43,9 @@ final class IndexEntries {
 
 	/** A NIO byte buffer for the index for fast memory-mapped access. */
 	private MappedByteBuffer buffer;
+
+	/** The offset in the file where the index starts. */
+	private long offset;
 
 	/**
 	 * Sets the indexed value at the specified position.
@@ -120,6 +123,7 @@ final class IndexEntries {
 		}
 
 		buffer = channel.map(MapMode.READ_WRITE, offset, ENTRY_OFFSET + (capacity * 8));
+		this.offset = offset;
 	}
 
 	public void unmap() throws IOException {
@@ -144,5 +148,9 @@ final class IndexEntries {
 
 	public int getMaxKey() {
 		return maxKey;
+	}
+
+	public long getOffset() {
+		return offset;
 	}
 }
