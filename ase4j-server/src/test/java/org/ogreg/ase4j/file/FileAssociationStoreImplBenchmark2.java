@@ -52,10 +52,10 @@ public class FileAssociationStoreImplBenchmark2 {
 
 		try {
 			int WORDS = 100000;
-			int ASSOCS = 1000000;
+			int ASSOCS = 5000000;
 
 			words = TestUtils.randomWords(WORDS, 31);
-			Random rnd = new Random();
+			Random rnd = new Random(0);
 
 			Benchmark.start();
 

@@ -11,8 +11,13 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Random;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.ogreg.ase4j.Association;
@@ -27,6 +32,7 @@ import org.ogreg.ostore.ObjectStore;
 import org.ogreg.ostore.ObjectStoreManager;
 import org.ogreg.ostore.memory.StringStore;
 import org.ogreg.test.FileTestSupport;
+import org.ogreg.test.TestUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -206,6 +212,65 @@ public class FileAssociationStoreImplTest {
 		assertEquals(l1.get(1).value, 0.79673296F); // LOGSUM
 		assertEquals(l1.get(2).value, 0.5F); // OVERWRITE
 		assertEquals(l1.get(3).value, 1.5F); // SUM
+	}
+
+	/**
+	 * Tests lots of random inserts.
+	 */
+	public void testInsert04() throws Exception {
+		File tf = FileTestSupport.createTempFile("assocs.idx");
+
+		simpleStore = new FileAssociationStoreImpl<String, String>();
+		simpleStore.setFromStore(sstore);
+		simpleStore.setToStore(sstore);
+		simpleStore.setStorageFile(tf);
+		simpleStore.init();
+
+		int ASSOCS = 100000;
+		int WORDS = 10000;
+
+		List<String> words = TestUtils.randomWords(WORDS, 31);
+		Map<String, Set<String>> control = new HashMap<String, Set<String>>();
+
+		Random rnd = new Random(0);
+
+		for (int i = 0; i < ASSOCS; i++) {
+			String from = words.get(rnd.nextInt(WORDS));
+			String to = words.get(rnd.nextInt(WORDS));
+
+			simpleStore.add(from, to, 1.0F, null);
+
+			Set<String> tos = control.get(from);
+			if (tos == null) {
+				tos = new HashSet<String>();
+				control.put(from, tos);
+			}
+			tos.add(to);
+		}
+
+		// Check by control map
+		for (Entry<String, Set<String>> e : control.entrySet()) {
+			String from = e.getKey();
+			Set<String> tos = e.getValue();
+
+			int fid = (int) sstore.save(from);
+			AssociationBlock assoc = simpleStore.getAssociation(fid);
+
+			for (int i = 0; i < assoc.size; i++) {
+				int tid = assoc.tos[i];
+				String to = sstore.get(tid);
+
+				if (!tos.remove(to)) {
+					throw new AssertionError("Association " + from + " - " + to
+							+ " was missing from the association block!");
+				}
+			}
+
+			if (!tos.isEmpty()) {
+				throw new AssertionError("Associations " + from + " - " + tos
+						+ " were erroneously added to the association block!");
+			}
+		}
 	}
 
 	/**
