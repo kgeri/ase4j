@@ -4,8 +4,10 @@ import static org.testng.Assert.assertEquals;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.List;
 
 import org.ogreg.test.FileTestSupport;
+import org.ogreg.test.TestUtils;
 import org.testng.annotations.Test;
 
 /**
@@ -37,6 +39,30 @@ public class StringStoreTest {
 		assertEquals(store.get(1), "aaa");
 		assertEquals(store.get(2), "abc");
 		assertEquals(store.get(3), "aab");
+	}
+
+	/**
+	 * Tests saving random entries to the string store.
+	 */
+	public void testAdd02() throws Exception {
+		File dir = FileTestSupport.createTempDir("sstore");
+		StringStore store = new StringStore();
+		store.init(null, dir, new HashMap<String, String>());
+
+		int WORDS = 10000;
+		List<String> words = TestUtils.randomWords(WORDS, 31);
+
+		for (String word : words) {
+			store.save(word);
+		}
+		store.flush();
+
+		store = new StringStore();
+		store.init(null, dir, new HashMap<String, String>());
+
+		for (int i = 0; i < words.size(); i++) {
+			assertEquals(store.get(i), words.get(i));
+		}
 	}
 
 	/**

@@ -218,6 +218,10 @@ public class FileAssociationStoreImplTest {
 	 * Tests lots of random inserts.
 	 */
 	public void testInsert04() throws Exception {
+		File dir = FileTestSupport.createTempDir("sstore");
+		sstore = new StringStore();
+		sstore.init(null, dir, new HashMap<String, String>());
+
 		File tf = FileTestSupport.createTempFile("assocs.idx");
 
 		simpleStore = new FileAssociationStoreImpl<String, String>();
@@ -247,6 +251,20 @@ public class FileAssociationStoreImplTest {
 			}
 			tos.add(to);
 		}
+
+		sstore.flush();
+		simpleStore.flush();
+		sstore.close();
+		simpleStore.close();
+
+		sstore = new StringStore();
+		sstore.init(null, dir, new HashMap<String, String>());
+
+		simpleStore = new FileAssociationStoreImpl<String, String>();
+		simpleStore.setFromStore(sstore);
+		simpleStore.setToStore(sstore);
+		simpleStore.setStorageFile(tf);
+		simpleStore.init();
 
 		// Check by control map
 		for (Entry<String, Set<String>> e : control.entrySet()) {
