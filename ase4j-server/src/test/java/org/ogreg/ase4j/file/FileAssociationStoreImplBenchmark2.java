@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import org.ogreg.ase4j.AssociationStoreException;
 import org.ogreg.ostore.memory.StringStore;
 import org.ogreg.test.Benchmark;
 import org.ogreg.test.Benchmark.Result;
@@ -63,13 +62,15 @@ public class FileAssociationStoreImplBenchmark2 {
 				store.add(words.get(rnd.nextInt(WORDS)), words.get(rnd.nextInt(WORDS)), 1.0F, null);
 			}
 
+			store.flush();
+
 			Result r = Benchmark.stop();
 
 			System.err
 					.println((ASSOCS * 1000) / r.time(TimeUnit.MILLISECONDS) + " inserts per sec");
 			System.err.println(((double) store.getStorageFile().length() / 1024 / 1.024 / r
 					.time(TimeUnit.MILLISECONDS)) + " Mb/s");
-		} catch (AssociationStoreException e) {
+		} catch (Exception e) {
 			throw new AssertionError(e);
 		}
 	}

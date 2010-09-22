@@ -92,7 +92,7 @@ public class BaseIndexedStoreStatsProvider {
 			unusedEntryBytes += holeSize;
 		}
 
-		return new Stats(holes, numEntries, unusedIndexBytes, unusedEntryBytes);
+		return new Stats(holes, numEntries, ie.getCapacity(), unusedIndexBytes, unusedEntryBytes);
 	}
 
 	/**
@@ -103,13 +103,15 @@ public class BaseIndexedStoreStatsProvider {
 	public static class Stats {
 		public final List<IndexHole> holes;
 		public final int numEntries;
+		public final int maxEntries;
 		public final long unusedIndexBytes;
 		public final long unusedEntryBytes;
 
-		public Stats(List<IndexHole> holes, int numEntries, long unusedIndexBytes,
+		public Stats(List<IndexHole> holes, int numEntries, int maxEntries, long unusedIndexBytes,
 				long unusedEntryBytes) {
 			this.holes = holes;
 			this.numEntries = numEntries;
+			this.maxEntries = maxEntries;
 			this.unusedIndexBytes = unusedIndexBytes;
 			this.unusedEntryBytes = unusedEntryBytes;
 		}
