@@ -337,7 +337,7 @@ public abstract class BaseIndexedStore<T> implements Closeable, Flushable {
 			targetIndex.set(i, targetChannel.position() + totalSize);
 
 			// Delaying transfer of continuous blocks for better performance
-			if (firstPos + totalSize == storagePos && i < maxKey) {
+			if (firstPos + totalSize == storagePos) {
 				totalSize += size;
 			} else {
 				storageChannel.transferTo(firstPos, totalSize, targetChannel);
