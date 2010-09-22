@@ -318,20 +318,36 @@ public abstract class BaseIndexedStore<T> implements Closeable, Flushable {
 		writeHeader(targetChannel);
 		targetIndex.map(targetChannel, targetChannel.position(), capacity);
 
-		// Appending data to the target channel
+		// Positioning the target channel
 		targetChannel.position(targetChannel.size());
+
+		// Smart appending data to the target channel
+		long firstPos = index.get(0);
+		long totalSize = 0;
 		for (int i = 0; i <= maxKey; i++) {
 			long storagePos = index.get(i);
 
 			if (storagePos == 0) {
+				// Skipping unset (deleted) entry
 				continue;
 			}
 
 			int size = serializer.sizeOf(storageChannel, storagePos);
 
-			targetIndex.set(i, targetChannel.position());
-			storageChannel.transferTo(storagePos, size, targetChannel);
+			targetIndex.set(i, targetChannel.position() + totalSize);
+
+			// Delaying transfer of continuous blocks for better performance
+			if (firstPos + totalSize == storagePos && i < maxKey) {
+				totalSize += size;
+			} else {
+				storageChannel.transferTo(firstPos, totalSize, targetChannel);
+				firstPos = storagePos;
+				totalSize = size;
+			}
 		}
+
+		// Transfer final block
+		storageChannel.transferTo(firstPos, totalSize, targetChannel);
 
 		targetIndex.flush();
 		targetIndex.unmap();
