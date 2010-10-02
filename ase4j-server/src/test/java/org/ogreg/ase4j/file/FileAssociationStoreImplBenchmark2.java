@@ -35,6 +35,7 @@ public class FileAssociationStoreImplBenchmark2 {
 		store.setFromStore(ostore);
 		store.setToStore(ostore);
 		store.setStorageFile(file);
+		store.setMaxCached(10000000);
 		store.init();
 	}
 
@@ -50,7 +51,7 @@ public class FileAssociationStoreImplBenchmark2 {
 	public void testInsert01() {
 
 		try {
-			int ASSOCS = 5000000;
+			int ASSOCS = 50000000;
 			int WORDS = 100000;
 
 			words = TestUtils.randomWords(WORDS, 31);
@@ -67,8 +68,8 @@ public class FileAssociationStoreImplBenchmark2 {
 
 			Result r = Benchmark.stop();
 
-			System.err
-					.println((ASSOCS * 1000) / r.time(TimeUnit.MILLISECONDS) + " inserts per sec");
+			System.err.println((ASSOCS * 1000.0) / r.time(TimeUnit.MILLISECONDS)
+					+ " inserts per sec");
 			System.err.println(((double) store.getStorageFile().length() / 1024 / 1.024 / r
 					.time(TimeUnit.MILLISECONDS)) + " Mb/s");
 			System.err.printf("%.2f seconds\n", r.time(TimeUnit.MILLISECONDS) / 1000.0);

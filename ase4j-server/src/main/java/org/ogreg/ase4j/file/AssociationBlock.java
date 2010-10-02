@@ -132,50 +132,6 @@ class AssociationBlock implements Serializable {
 	}
 
 	/**
-	 * Intersects and merges this block with the given block.
-	 * <p>
-	 * On return this block will contain only the <code>tos</code> found in
-	 * either this block, or both blocks. When the <code>to</code> is found in
-	 * both blocks, their values will be merged.
-	 * </p>
-	 * 
-	 * @param block
-	 * @param op
-	 */
-	public AssociationBlock interMerge(AssociationBlock block, Operation op) {
-		int la = size();
-		int lb = block.size();
-
-		AssociationBlock row = new AssociationBlock(from);
-		row.capacity = capacity;
-		row.size = size;
-		row.originalCapacity = originalCapacity;
-		row.changed = true;
-		row.tos = java.util.Arrays.copyOf(tos, capacity);
-		row.values = java.util.Arrays.copyOf(values, capacity);
-
-		int j = 0;
-
-		// Note: arrays are sorted in _ascending_ order
-		for (int i = 0; i < la; i++) {
-			int a = tos[i];
-
-			// Looking for the next to in the block
-			for (; j < lb && block.tos[j] < a; j++) {
-			}
-
-			if (j >= lb) {
-				break;
-			} else if (block.tos[j] == a) {
-				row.values[i] = op.calculate(block.values[j], values[i]);
-				j++;
-			}
-		}
-
-		return row;
-	}
-
-	/**
 	 * Returns the strength of the association with <code>to</code>.
 	 * 
 	 * @param to

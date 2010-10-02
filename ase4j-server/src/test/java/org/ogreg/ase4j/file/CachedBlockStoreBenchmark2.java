@@ -27,7 +27,7 @@ public class CachedBlockStoreBenchmark2 {
 	public void testInsert01() {
 
 		try {
-			int ASSOCS = 20000000;
+			int ASSOCS = 10000000;
 			int WORDS = 100000;
 
 			File assocs = FileTestSupport.createTempFile("assocs");
@@ -36,7 +36,7 @@ public class CachedBlockStoreBenchmark2 {
 
 			fs = new CachedBlockStore();
 			fs.open(assocs);
-			fs.setMaxCached(1000000);
+			fs.setMaxCached(10000000);
 
 			Random rnd = new Random(0);
 
@@ -44,9 +44,9 @@ public class CachedBlockStoreBenchmark2 {
 
 			for (int i = 0; i < ASSOCS; i++) {
 				AssociationBlock ab = new AssociationBlock(rnd.nextInt(WORDS));
-				ab.merge(rnd.nextInt(WORDS), 1.0F, Operation.AVG);
+				ab.merge(rnd.nextInt(WORDS), 1.0F, Operation.OVERWRITE);
 
-				fs.merge(ab, Operation.AVG);
+				fs.merge(ab, Operation.OVERWRITE);
 			}
 
 			System.err.println("Flushing...");

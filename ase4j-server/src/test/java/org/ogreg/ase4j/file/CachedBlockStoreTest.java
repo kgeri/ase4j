@@ -20,7 +20,7 @@ import org.testng.annotations.Test;
  */
 @Test(groups = "correctness")
 public class CachedBlockStoreTest {
-	private static final Operation OP = Operation.AVG;
+	private static final Operation OP = Operation.OVERWRITE;
 	private CachedBlockStore fs;
 
 	@BeforeMethod
@@ -108,7 +108,7 @@ public class CachedBlockStoreTest {
 
 			fs.flush();
 
-			assertEquals(fs.get(0, 1), 150.0F);
+			assertEquals(fs.get(0, 1), 200.0F);
 			assertEquals(fs.get(0, 2), 50.0F);
 
 			fs.flush();
@@ -116,7 +116,7 @@ public class CachedBlockStoreTest {
 			fs.merge(assoc(0, 1, 50), OP);
 			fs.flush();
 
-			assertEquals(fs.get(0, 1), 100.0F);
+			assertEquals(fs.get(0, 1), 50.0F);
 
 			// For coverage (finalizer)
 			fs = null;

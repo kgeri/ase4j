@@ -102,29 +102,16 @@ public interface AssociationStore<F, T> {
 	/**
 	 * Provides different computation mechanisms when two or more associations
 	 * are added.
+	 * <p>
+	 * Please note that for cached block storage indexing to be efficient, every
+	 * operation must be <b>associative</b>.
+	 * </p>
 	 * 
 	 * @author Gergely Kiss
 	 */
 	public enum Operation {
 		/**
-		 * Average (default).
-		 * <p>
-		 * When an association already exists, the value will be the average of
-		 * the old value and the new value:
-		 * </p>
-		 * <code>
-		 * v = ( v<sub>o</sub> + v<sub>n</sub> ) / 2
-		 * </code>
-		 */
-		AVG {
-			@Override
-			public float calculate(float oldValue, float newValue) {
-				return (oldValue + newValue) / 2;
-			}
-		},
-
-		/**
-		 * Addition.
+		 * Addition (default).
 		 * <p>
 		 * When an association already exists, the value will be the sum of the
 		 * old value and the new value:
@@ -137,23 +124,6 @@ public interface AssociationStore<F, T> {
 			@Override
 			public float calculate(float oldValue, float newValue) {
 				return oldValue + newValue;
-			}
-		},
-
-		/**
-		 * Logarithmic addition.
-		 * <p>
-		 * When an association already exists, the value be calculated as
-		 * follows:
-		 * </p>
-		 * <code>
-		 * v = ln( e<sup>v<sub>o</sub></sup> + v<sub>n</sub> - v<sub>o</sub>)
-		 * </code>
-		 */
-		LOGSUM {
-			@Override
-			public float calculate(float oldValue, float newValue) {
-				return (float) Math.log(Math.exp(oldValue) + newValue - oldValue);
 			}
 		},
 

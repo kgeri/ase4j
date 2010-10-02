@@ -183,14 +183,6 @@ public class FileAssociationStoreImplTest {
 		simpleStore.setStorageFile(tf);
 		simpleStore.init();
 
-		// Average
-		simpleStore.add("a", "b", 1.0F, new Params(Operation.AVG));
-		simpleStore.add("a", "b", 0.5F, new Params(Operation.AVG));
-
-		// Logarithmic sum
-		simpleStore.add("a", "c", 1.0F, new Params(Operation.LOGSUM));
-		simpleStore.add("a", "c", 0.5F, new Params(Operation.LOGSUM));
-
 		// Overwrite
 		simpleStore.add("a", "d", 1.0F, new Params(Operation.OVERWRITE));
 		simpleStore.add("a", "d", 0.5F, new Params(Operation.OVERWRITE));
@@ -212,11 +204,9 @@ public class FileAssociationStoreImplTest {
 			}
 		});
 
-		assertEquals(l1.size(), 4);
-		assertEquals(l1.get(0).value, 0.75F); // AVG
-		assertEquals(l1.get(1).value, 0.79673296F); // LOGSUM
-		assertEquals(l1.get(2).value, 0.5F); // OVERWRITE
-		assertEquals(l1.get(3).value, 1.5F); // SUM
+		assertEquals(l1.size(), 2);
+		assertEquals(l1.get(0).value, 0.5F); // OVERWRITE
+		assertEquals(l1.get(1).value, 1.5F); // SUM
 	}
 
 	/**

@@ -37,9 +37,9 @@ public class AssociationBlockTest {
 		assertEquals("[0, 0, 0, 0]", Arrays.toString(row.tos));
 		assertEquals("[0.0, 0.0, 0.0, 0.0]", Arrays.toString(row.values));
 
-		row.merge(2, 100, Operation.AVG);
-		row.merge(1, 101, Operation.AVG);
-		row.merge(3, 100, Operation.AVG);
+		row.merge(2, 100, Operation.OVERWRITE);
+		row.merge(1, 101, Operation.OVERWRITE);
+		row.merge(3, 100, Operation.OVERWRITE);
 
 		assertEquals(1, row.from);
 		assertEquals(3, row.size());
@@ -58,17 +58,17 @@ public class AssociationBlockTest {
 		assertEquals("[0, 0]", Arrays.toString(row.tos));
 		assertEquals("[0.0, 0.0]", Arrays.toString(row.values));
 
-		row.merge(1, 100, Operation.AVG);
-		row.merge(1, 100, Operation.AVG); // No change for coverage
-		row.merge(1, 200, Operation.AVG);
+		row.merge(1, 100, Operation.OVERWRITE);
+		row.merge(1, 100, Operation.OVERWRITE); // No change for coverage
+		row.merge(1, 200, Operation.OVERWRITE);
 
 		assertTrue(row.isChanged());
 		assertEquals(1, row.size());
 		assertEquals("[1, 0]", Arrays.toString(row.tos));
-		assertEquals("[150.0, 0.0]", Arrays.toString(row.values));
+		assertEquals("[200.0, 0.0]", Arrays.toString(row.values));
 
 		// Some gets for coverage
-		assertEquals(150.0F, row.get(1));
+		assertEquals(200.0F, row.get(1));
 		assertEquals(0.0F, row.get(0));
 	}
 
@@ -81,13 +81,13 @@ public class AssociationBlockTest {
 		AssociationBlock row1 = new AssociationBlock(1);
 		AssociationBlock row2 = new AssociationBlock(1);
 
-		row1.merge(1, 100, Operation.AVG);
-		row2.merge(1, 200, Operation.AVG);
-		row1.merge(row2, Operation.AVG);
+		row1.merge(1, 100, Operation.OVERWRITE);
+		row2.merge(1, 200, Operation.OVERWRITE);
+		row1.merge(row2, Operation.OVERWRITE);
 
 		assertEquals(1, row1.size());
 		assertEquals("[1, 0]", Arrays.toString(row1.tos));
-		assertEquals("[150.0, 0.0]", Arrays.toString(row1.values));
+		assertEquals("[200.0, 0.0]", Arrays.toString(row1.values));
 	}
 
 	/**
@@ -100,33 +100,11 @@ public class AssociationBlockTest {
 		AssociationBlock row2 = new AssociationBlock(2);
 
 		try {
-			row1.merge(row2, Operation.AVG);
+			row1.merge(row2, Operation.OVERWRITE);
 
 			fail("Expected IllegalArgumentException");
 		} catch (IllegalArgumentException e) {
 		}
-	}
-
-	/**
-	 * Tests that rows with different subjects can not be merged.
-	 */
-	public void testInterMerge01() {
-		AssociationBlock.baseCapacity = 4;
-
-		AssociationBlock row1 = new AssociationBlock(1);
-		AssociationBlock row2 = new AssociationBlock(1);
-
-		row1.merge(1, 100, Operation.AVG);
-		row1.merge(2, 50, Operation.AVG);
-		row1.merge(3, 10, Operation.AVG);
-
-		row2.merge(2, 150, Operation.AVG);
-
-		AssociationBlock im = row2.interMerge(row1, Operation.AVG);
-
-		assertEquals(1, im.size());
-		assertEquals("[2, 0, 0, 0]", Arrays.toString(im.tos));
-		assertEquals("[100.0, 0.0, 0.0, 0.0]", Arrays.toString(im.values));
 	}
 
 	/**
@@ -142,12 +120,12 @@ public class AssociationBlockTest {
 		assertEquals("[0, 0]", Arrays.toString(row.tos));
 		assertEquals("[0.0, 0.0]", Arrays.toString(row.values));
 
-		row.merge(2, 100, Operation.AVG);
-		row.merge(1, 101, Operation.AVG);
+		row.merge(2, 100, Operation.OVERWRITE);
+		row.merge(1, 101, Operation.OVERWRITE);
 
 		assertFalse(row.isGrown());
 
-		row.merge(3, 100, Operation.AVG);
+		row.merge(3, 100, Operation.OVERWRITE);
 
 		assertEquals(1, row.from);
 		assertEquals(3, row.size());
@@ -160,15 +138,15 @@ public class AssociationBlockTest {
 	/**
 	 * Tests the row persistence.
 	 */
-	public void z_testPersist01() {
+	public void testPersist01() {
 
 		try {
 			AssociationBlock.baseCapacity = 2;
 
 			AssociationBlock row = new AssociationBlock(1);
 
-			row.merge(2, 100, Operation.AVG);
-			row.merge(1, 101, Operation.AVG);
+			row.merge(2, 100, Operation.OVERWRITE);
+			row.merge(1, 101, Operation.OVERWRITE);
 
 			File tmpFile = FileTestSupport.createTempFile("assoc.dat");
 

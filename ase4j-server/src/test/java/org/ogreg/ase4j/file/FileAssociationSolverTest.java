@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
  */
 @Test(groups = "correctness")
 public class FileAssociationSolverTest {
-	private static final Operation OP = Operation.AVG;
+	private static final Operation OP = Operation.OVERWRITE;
 	FileAssociationSolver solver = new FileAssociationSolver(null);
 
 	/**

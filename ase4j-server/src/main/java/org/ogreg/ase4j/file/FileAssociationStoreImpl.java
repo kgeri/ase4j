@@ -239,6 +239,21 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 		this.storageFile = storageFile;
 	}
 
+	/**
+	 * Sets the association cache size.
+	 * <p>
+	 * A total of <code>maxCached</code> associations will be stored in memory
+	 * before the cache buffer is flushed to disk. Since an association uses
+	 * only about 8 bytes (plus block overhead), this can probably be set to
+	 * >1M.
+	 * </p>
+	 * 
+	 * @param maxCached
+	 */
+	public void setMaxCached(int maxCached) {
+		assocs.setMaxCached(maxCached);
+	}
+
 	@Override
 	public AssociationStoreMetadata getMetadata() {
 		return metadata;

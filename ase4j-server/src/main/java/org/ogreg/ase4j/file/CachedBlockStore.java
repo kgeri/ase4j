@@ -5,6 +5,10 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -139,22 +143,38 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 	}
 
 	synchronized void flushWorkingSet() throws IOException {
+		List<AssociationBlock> assocs = new ArrayList<AssociationBlock>(workingSet.blocks.values());
+
+		// System.err.println("Sorting " + assocs.size() + "...");
+
+		// Sort blocks by file position to help OS disk cache
+		Collections.sort(assocs, new Comparator<AssociationBlock>() {
+			@Override
+			public int compare(AssociationBlock o1, AssociationBlock o2) {
+				long pos1 = getFilePosition(o1.from);
+				long pos2 = getFilePosition(o2.from);
+				return Long.signum(pos1 - pos2);
+			}
+		});
+
+		// System.err.println("Flushing...");
 
 		// Flushing the cache
-		for (AssociationBlock assocs : workingSet.blocks.values()) {
-			AssociationBlock stored = super.get(assocs.from);
+		for (AssociationBlock assoc : assocs) {
+			AssociationBlock stored = super.get(assoc.from);
 
 			if (stored == null) {
-				update(assocs.from, assocs);
+				update(assoc.from, assoc);
 			} else {
 				// TODO: faster writeback, avoid to read the whole block in
 				// memory again
-				stored.merge(assocs, Operation.OVERWRITE);
+				stored.merge(assoc, workingSet.lastOp);
 				update(stored.from, stored);
 			}
 		}
 
 		workingSet.clear();
+		// System.err.println("Done.");
 	}
 
 	@Override
@@ -177,9 +197,11 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 			iview.put(value.capacity);
 			iview.put(value.size);
 			iview.put(value.from);
-			iview.put(value.tos);
 
-			fview.position(iview.position());
+			int tpos = iview.position();
+			iview.put(value.tos, 0, value.size);
+
+			fview.position(tpos + value.capacity);
 			fview.put(value.values);
 
 			// Resetting changedness
@@ -198,10 +220,11 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 
 			AssociationBlock assocs = new AssociationBlock(capacity, size, from);
 
-			iview.get(assocs.tos);
+			int tpos = iview.position();
+			iview.get(assocs.tos, 0, size);
 
-			fview.position(iview.position());
-			fview.get(assocs.values);
+			fview.position(tpos + capacity);
+			fview.get(assocs.values, 0, size);
 
 			assocs.changed = false;
 
@@ -230,9 +253,17 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 	private class WorkingSet {
 		private long associationCount;
 		private int blockCount;
+		private Operation lastOp;
 		private final Map<Integer, AssociationBlock> blocks = new ConcurrentHashMap<Integer, AssociationBlock>();
 
 		synchronized void merge(AssociationBlock assocs, Operation op) throws IOException {
+			if (lastOp != null && lastOp != op) {
+				// Force working set flush if operation changes
+				flushWorkingSet();
+			}
+
+			lastOp = op;
+
 			if (associationCount + assocs.size > maxCached) {
 				flushWorkingSet();
 			}
@@ -240,11 +271,7 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 			AssociationBlock ws = blocks.get(assocs.from);
 
 			if (ws == null) {
-				// Reading the stored association ensures the operation order
-				AssociationBlock stored = CachedBlockStore.super.get(assocs.from);
-				AssociationBlock merged = stored == null ? assocs : assocs.interMerge(stored, op);
-
-				blocks.put(assocs.from, merged);
+				blocks.put(assocs.from, assocs);
 				blockCount++;
 				associationCount += assocs.size;
 			} else {

@@ -39,14 +39,14 @@ public class CachedBlockStoreBenchmark {
 			final AssociationBlock ar = new AssociationBlock(0);
 
 			for (int i = 0; i < 127; i++) {
-				ar.merge(i, 100, Operation.AVG);
+				ar.merge(i, 100, Operation.OVERWRITE);
 			}
 
 			Result r = TestUtils.measure(100000, new Measurement() {
 				@Override
 				public void run(int step) throws Exception {
 					ar.from = step;
-					fs.merge(ar, Operation.AVG);
+					fs.merge(ar, Operation.OVERWRITE);
 				}
 
 				@Override
@@ -86,7 +86,7 @@ public class CachedBlockStoreBenchmark {
 			final AssociationBlock ar = new AssociationBlock(0);
 
 			for (int i = 0; i < 127; i++) {
-				ar.merge(i, 100, Operation.AVG);
+				ar.merge(i, 100, Operation.OVERWRITE);
 			}
 
 			final Random rnd = new Random();
@@ -94,7 +94,7 @@ public class CachedBlockStoreBenchmark {
 				@Override
 				public void run(int iteration) throws Exception {
 					ar.from = rnd.nextInt(100000);
-					fs.merge(ar, Operation.AVG);
+					fs.merge(ar, Operation.OVERWRITE);
 				}
 
 				@Override

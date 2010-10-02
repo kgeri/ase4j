@@ -205,6 +205,10 @@ public abstract class BaseIndexedStore<T> implements Closeable, Flushable {
 		}
 	}
 
+	protected long getFilePosition(int key) {
+		return index.get(key);
+	}
+
 	/**
 	 * Appends the entity at the end of the store.
 	 * 
