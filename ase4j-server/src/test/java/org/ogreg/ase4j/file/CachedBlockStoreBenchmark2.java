@@ -27,7 +27,7 @@ public class CachedBlockStoreBenchmark2 {
 	public void testInsert01() {
 
 		try {
-			int ASSOCS = 100000000;
+			int ASSOCS = 20000000;
 			int WORDS = 100000;
 
 			File assocs = FileTestSupport.createTempFile("assocs");
@@ -38,19 +38,12 @@ public class CachedBlockStoreBenchmark2 {
 			fs.open(assocs);
 			fs.setMaxCached(1000000);
 
-			AssociationBlock[] abs = new AssociationBlock[WORDS];
-			for (int i = 0; i < abs.length; i++) {
-				abs[i] = new AssociationBlock(i);
-			}
-
 			Random rnd = new Random(0);
 
 			Benchmark.start();
 
 			for (int i = 0; i < ASSOCS; i++) {
-				AssociationBlock ab = abs[rnd.nextInt(WORDS)];
-
-				ab.clear();
+				AssociationBlock ab = new AssociationBlock(rnd.nextInt(WORDS));
 				ab.merge(rnd.nextInt(WORDS), 1.0F, Operation.AVG);
 
 				fs.merge(ab, Operation.AVG);

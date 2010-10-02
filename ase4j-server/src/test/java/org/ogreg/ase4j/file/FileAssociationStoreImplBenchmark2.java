@@ -50,8 +50,8 @@ public class FileAssociationStoreImplBenchmark2 {
 	public void testInsert01() {
 
 		try {
-			int WORDS = 100000;
 			int ASSOCS = 5000000;
+			int WORDS = 100000;
 
 			words = TestUtils.randomWords(WORDS, 31);
 			Random rnd = new Random(0);

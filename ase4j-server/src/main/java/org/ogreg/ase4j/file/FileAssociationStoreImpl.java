@@ -91,11 +91,11 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 		try {
 			Operation op = Params.ensureNotNull(params).op;
 
-			Long fi = fromStore.save(from);
-			Long ti = toStore.save(to);
+			int fi = (int) fromStore.save(from);
+			int ti = (int) toStore.save(to);
 
-			AssociationBlock a = new AssociationBlock(fi.intValue());
-			a.merge(ti.intValue(), value, op);
+			AssociationBlock a = new AssociationBlock(fi);
+			a.merge(ti, value, op);
 
 			assocs.merge(a, op);
 		} catch (IOException e) {
@@ -111,14 +111,14 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 
 		try {
 			Operation op = Params.ensureNotNull(params).op;
-			Long ti = toStore.save(to);
+			int ti = (int) toStore.save(to);
 
 			for (Association<F, ?> assoc : froms) {
 				F from = assoc.from;
-				Long fi = fromStore.save(from);
+				int fi = (int) fromStore.save(from);
 
-				AssociationBlock a = new AssociationBlock(fi.intValue());
-				a.merge(ti.intValue(), assoc.value, op);
+				AssociationBlock a = new AssociationBlock(fi);
+				a.merge(ti, assoc.value, op);
 
 				this.assocs.merge(a, op);
 			}
@@ -151,15 +151,15 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 
 			for (Entry<F, List<Association<F, T>>> e : byFrom.entrySet()) {
 				F from = e.getKey();
-				Long fi = fromStore.save(from);
+				int fi = (int) fromStore.save(from);
 
-				AssociationBlock a = new AssociationBlock(fi.intValue());
+				AssociationBlock a = new AssociationBlock(fi);
 
 				for (Association<F, T> assoc : e.getValue()) {
-					Long ti = toStore.save(assoc.to);
+					int ti = (int) toStore.save(assoc.to);
 
 					// TODO This could be more effective
-					a.merge(ti.intValue(), assoc.value, op);
+					a.merge(ti, assoc.value, op);
 				}
 
 				this.assocs.merge(a, op);
