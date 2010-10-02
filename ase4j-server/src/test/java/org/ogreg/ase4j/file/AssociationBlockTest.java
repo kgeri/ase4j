@@ -108,6 +108,28 @@ public class AssociationBlockTest {
 	}
 
 	/**
+	 * Tests that rows with different subjects can not be merged.
+	 */
+	public void testInterMerge01() {
+		AssociationBlock.baseCapacity = 4;
+
+		AssociationBlock row1 = new AssociationBlock(1);
+		AssociationBlock row2 = new AssociationBlock(1);
+
+		row1.merge(1, 100, Operation.AVG);
+		row1.merge(2, 50, Operation.AVG);
+		row1.merge(3, 10, Operation.AVG);
+
+		row2.merge(2, 150, Operation.AVG);
+
+		AssociationBlock im = row2.interMerge(row1, Operation.AVG);
+
+		assertEquals(1, im.size());
+		assertEquals("[2, 0, 0, 0]", Arrays.toString(im.tos));
+		assertEquals("[100.0, 0.0, 0.0, 0.0]", Arrays.toString(im.values));
+	}
+
+	/**
 	 * Tests a row growing.
 	 */
 	public void testGrow01() {

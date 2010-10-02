@@ -106,6 +106,8 @@ public class CachedBlockStoreTest {
 			fs.merge(assoc(0, 4, 50), OP);
 			fs.merge(assoc(0, 5, 50), OP);
 
+			fs.flush();
+
 			assertEquals(fs.get(0, 1), 150.0F);
 			assertEquals(fs.get(0, 2), 50.0F);
 
@@ -138,6 +140,7 @@ public class CachedBlockStoreTest {
 			fs.merge(assoc(1, 1, 20), OP);
 			// Testing storage holes also
 			fs.merge(assoc(3, 1, 40), OP);
+			fs.flush();
 
 			// Original size: 4 (AS4J) + 8 (size) + 4 (index capacity) + 4
 			// (index maxKey) + 4 * 8 (index entries) + 4 * (12 + 4 * 8)
@@ -147,6 +150,7 @@ public class CachedBlockStoreTest {
 			// Growing will occur here
 			fs.merge(assoc(4, 1, 50), OP);
 			fs.merge(assoc(2, 1, 30), OP);
+			fs.flush();
 
 			// Target size: 4 (AS4J) + 8 (size) + 4 (index capacity) + 4 (index
 			// maxKey) + 8 * 8 (index entries) + 5 * (12 + 4 * 8) (association

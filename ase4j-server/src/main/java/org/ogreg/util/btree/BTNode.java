@@ -150,7 +150,7 @@ class BTNode<K extends Comparable<K>, V> implements Serializable {
 	 * @param key
 	 * @return
 	 */
-	public int indexOf(K key) {
+	public final int indexOf(K key) {
 		if (size == 0) {
 			return -1;
 		} else if (isLeaf()) {

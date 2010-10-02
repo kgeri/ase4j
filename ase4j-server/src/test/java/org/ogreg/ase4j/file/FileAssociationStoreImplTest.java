@@ -12,6 +12,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -148,6 +149,7 @@ public class FileAssociationStoreImplTest {
 		as.add(assoc("b", "d", 1.0F));
 
 		simpleStore.addAll(as, null);
+		simpleStore.flush();
 
 		List<Association<String, String>> l1 = simpleStore
 				.query(new Query(Restrictions.phrase("a")).limit(10));
@@ -160,6 +162,7 @@ public class FileAssociationStoreImplTest {
 
 		as.add(assoc("e", "X", 5.0F));
 		simpleStore.addAll(as, "f", null);
+		simpleStore.flush();
 
 		List<Association<String, String>> l2 = simpleStore
 				.query(new Query(Restrictions.phrase("e")).limit(10));
@@ -195,6 +198,8 @@ public class FileAssociationStoreImplTest {
 		// Sum
 		simpleStore.add("a", "e", 1.0F, new Params(Operation.SUM));
 		simpleStore.add("a", "e", 0.5F, new Params(Operation.SUM));
+
+		simpleStore.flush();
 
 		List<Association<String, String>> l1 = simpleStore
 				.query(new Query(Restrictions.phrase("a")));
@@ -234,7 +239,7 @@ public class FileAssociationStoreImplTest {
 		int WORDS = 10000;
 
 		List<String> words = TestUtils.randomWords(WORDS, 31);
-		Map<String, Set<String>> control = new HashMap<String, Set<String>>();
+		Map<String, Set<String>> control = new LinkedHashMap<String, Set<String>>();
 
 		Random rnd = new Random(0);
 
@@ -280,13 +285,13 @@ public class FileAssociationStoreImplTest {
 
 				if (!tos.remove(to)) {
 					throw new AssertionError("Association " + from + " - " + to
-							+ " was missing from the association block!");
+							+ " was erroneously added to the association block!");
 				}
 			}
 
 			if (!tos.isEmpty()) {
 				throw new AssertionError("Associations " + from + " - " + tos
-						+ " were erroneously added to the association block!");
+						+ " were missing from the association block!");
 			}
 		}
 	}
@@ -311,6 +316,7 @@ public class FileAssociationStoreImplTest {
 		as.add(assoc("c", "e", 0.1F));
 
 		simpleStore.addAll(as, null);
+		simpleStore.flush();
 
 		List<Association<String, String>> l;
 
@@ -365,6 +371,7 @@ public class FileAssociationStoreImplTest {
 		as.add(assoc("b", data("ddd", new Date(), 40), 1.0F));
 
 		objStore.addAll(as, null);
+		objStore.flush();
 
 		List<Association<String, TestData>> l;
 

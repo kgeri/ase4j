@@ -27,7 +27,7 @@ public class CachedBlockStoreBenchmark2 {
 	public void testInsert01() {
 
 		try {
-			int ASSOCS = 5000000;
+			int ASSOCS = 100000000;
 			int WORDS = 100000;
 
 			File assocs = FileTestSupport.createTempFile("assocs");
@@ -36,7 +36,7 @@ public class CachedBlockStoreBenchmark2 {
 
 			fs = new CachedBlockStore();
 			fs.open(assocs);
-			fs.setMaxCached(0);
+			fs.setMaxCached(1000000);
 
 			AssociationBlock[] abs = new AssociationBlock[WORDS];
 			for (int i = 0; i < abs.length; i++) {
@@ -56,6 +56,7 @@ public class CachedBlockStoreBenchmark2 {
 				fs.merge(ab, Operation.AVG);
 			}
 
+			System.err.println("Flushing...");
 			fs.flush();
 
 			Result r = Benchmark.stop();
@@ -64,6 +65,7 @@ public class CachedBlockStoreBenchmark2 {
 					(ASSOCS * 1000.0) / r.time(TimeUnit.MILLISECONDS));
 			System.err.printf("%.2f Mb/s\n",
 					(double) assocs.length() / 1024 / 1.024 / r.time(TimeUnit.MILLISECONDS));
+			System.err.printf("%.2f seconds\n", r.time(TimeUnit.MILLISECONDS) / 1000.0);
 		} catch (IOException e) {
 			throw new AssertionError(e);
 		} finally {

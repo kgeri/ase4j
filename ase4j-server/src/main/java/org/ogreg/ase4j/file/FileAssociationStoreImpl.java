@@ -278,11 +278,13 @@ public class FileAssociationStoreImpl<F, T> implements ConfigurableAssociationSt
 
 	@Override
 	public long getCachedBlockCount() {
-		return assocs.getCache().size();
+		// return assocs.getCache().size(); TODO
+		return 0;
 	}
 
 	@Override
 	public long getCachedAssociationCount() {
-		return assocs.getCache().getAssociationCount();
+		// return assocs.getCache().getAssociationCount(); TODO
+		return 0;
 	}
 }

@@ -65,12 +65,16 @@ class AssociationBlock implements Serializable {
 
 	/**
 	 * Merges all the associations from <code>value</code> to this row.
+	 * <p>
+	 * Updates the already existing associations using the given <code>op</code>
+	 * operation.
+	 * </p>
 	 * 
 	 * @param value
 	 * @param op The operation to use for adding associations
-	 * @return The number of new associations added
+	 * @return The number of inserted associations
 	 */
-	public void merge(AssociationBlock value, Operation op) {
+	public int merge(AssociationBlock value, Operation op) {
 
 		if (value.from != from) {
 			throw new IllegalArgumentException(
@@ -83,9 +87,12 @@ class AssociationBlock implements Serializable {
 			grow(size + value.size);
 		}
 
+		int inserted = 0;
 		for (int i = 0; i < value.size; i++) {
-			merge(value.tos[i], value.values[i], op);
+			// TODO Merge whole blocks
+			inserted += merge(value.tos[i], value.values[i], op);
 		}
+		return inserted;
 	}
 
 	/**
@@ -94,8 +101,9 @@ class AssociationBlock implements Serializable {
 	 * @param to
 	 * @param value
 	 * @param op The operation to use for adding associations
+	 * @return 0 if the value was updated, 1 if it was added
 	 */
-	public void merge(int to, float value, Operation op) {
+	public int merge(int to, float value, Operation op) {
 
 		// Determining if to already exists
 		int tidx = Arrays.binarySearch(tos, 0, size, to);
@@ -113,12 +121,58 @@ class AssociationBlock implements Serializable {
 			Arrays.insert(values, size, tidx, value);
 			size++;
 			changed = true;
+			return 1;
 		}
 		// Update
 		else {
 			values[tidx] = op.calculate(values[tidx], value);
 			changed |= value != values[tidx];
+			return 0;
 		}
+	}
+
+	/**
+	 * Intersects and merges this block with the given block.
+	 * <p>
+	 * On return this block will contain only the <code>tos</code> found in
+	 * either this block, or both blocks. When the <code>to</code> is found in
+	 * both blocks, their values will be merged.
+	 * </p>
+	 * 
+	 * @param block
+	 * @param op
+	 */
+	public AssociationBlock interMerge(AssociationBlock block, Operation op) {
+		int la = size();
+		int lb = block.size();
+
+		AssociationBlock row = new AssociationBlock(from);
+		row.capacity = capacity;
+		row.size = size;
+		row.originalCapacity = originalCapacity;
+		row.changed = true;
+		row.tos = java.util.Arrays.copyOf(tos, capacity);
+		row.values = java.util.Arrays.copyOf(values, capacity);
+
+		int j = 0;
+
+		// Note: arrays are sorted in _ascending_ order
+		for (int i = 0; i < la; i++) {
+			int a = tos[i];
+
+			// Looking for the next to in the block
+			for (; j < lb && block.tos[j] < a; j++) {
+			}
+
+			if (j >= lb) {
+				break;
+			} else if (block.tos[j] == a) {
+				row.values[i] = op.calculate(block.values[j], values[i]);
+				j++;
+			}
+		}
+
+		return row;
 	}
 
 	/**

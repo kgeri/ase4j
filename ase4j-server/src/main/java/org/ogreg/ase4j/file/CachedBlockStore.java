@@ -5,8 +5,8 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.channels.FileChannel;
-import java.util.LinkedHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.ogreg.ase4j.AssociationStore.Operation;
 import org.ogreg.common.nio.BaseIndexedStore;
@@ -15,6 +15,12 @@ import org.ogreg.common.nio.NioUtils;
 
 /**
  * File based, cached association block storage.
+ * <p>
+ * Because the layout the {@link AssociationBlock} uses, it is not efficient to
+ * store association one-by-one. Associations merged in this store are cached
+ * until they reach a critical amount ({@link #maxCached}), after which they are
+ * {@link #flush()}-ed to disk.
+ * </p>
  * 
  * @author Gergely Kiss
  */
@@ -26,11 +32,16 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 	// The base capacity of a newly created association store
 	static int baseCapacity = 1024;
 
-	/** The in-memory cache of the association blocks. */
-	private LRUCache cache = new LRUCache();
+	/** The in-memory working set of the association blocks. */
+	private WorkingSet workingSet = new WorkingSet();
 
-	/** The maximum number of cached blocks. */
-	private int maxCached = 1024;
+	/**
+	 * The maximum number of cached associations.
+	 * <p>
+	 * Default: 1 million
+	 * </p>
+	 */
+	private int maxCached = 1000000;
 
 	/** The number of currently stored associations. */
 	private long associationCount = 0;
@@ -72,33 +83,7 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 	 * @throws IOException in case of a storage failure
 	 */
 	public void merge(AssociationBlock assocs, Operation op) throws IOException {
-		int from = assocs.from;
-
-		AssociationBlock oldAssocs = cache.get(from);
-
-		// Not found in cache
-		if (oldAssocs == null) {
-			oldAssocs = super.get(from);
-
-			// Not found in index, saving and caching, skipping merge
-			if (oldAssocs == null) {
-				super.add(from, assocs);
-				cache.put(from, assocs);
-				associationCount += assocs.size;
-
-				return;
-			}
-			// Found in index, caching
-			else {
-				cache.put(from, oldAssocs);
-			}
-		}
-
-		synchronized (oldAssocs) {
-			int oldSize = oldAssocs.size;
-			oldAssocs.merge(assocs, op);
-			associationCount += oldAssocs.size - oldSize;
-		}
+		workingSet.merge(assocs, op);
 	}
 
 	/**
@@ -111,16 +96,9 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 	 */
 	@Override
 	public AssociationBlock get(int from) throws IOException {
-		AssociationBlock assocs = cache.get(from);
+		AssociationBlock assocs = super.get(from);
 
-		// Not found in cache
-		if (assocs == null) {
-			assocs = super.get(from);
-
-			if (assocs != null) {
-				cache.put(from, assocs);
-			}
-		}
+		// TODO Caching?
 
 		return assocs;
 	}
@@ -140,26 +118,43 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 		return (assocs == null) ? 0 : assocs.get(to);
 	}
 
+	/**
+	 * Sets the association cache size.
+	 * <p>
+	 * A total of <code>maxCached</code> associations will be stored in memory
+	 * before the cache buffer is flushed to disk. Since an association uses
+	 * only about 8 bytes (plus block overhead), this can probably be set to
+	 * >1M.
+	 * </p>
+	 * 
+	 * @param maxCached
+	 */
 	public void setMaxCached(int maxCached) {
 		this.maxCached = maxCached;
 	}
 
 	@Override
 	protected void onBeforeFlush() throws IOException {
+		flushWorkingSet();
+	}
+
+	synchronized void flushWorkingSet() throws IOException {
 
 		// Flushing the cache
-		for (AssociationBlock assocs : cache.values()) {
-			flush(assocs);
+		for (AssociationBlock assocs : workingSet.blocks.values()) {
+			AssociationBlock stored = super.get(assocs.from);
+
+			if (stored == null) {
+				update(assocs.from, assocs);
+			} else {
+				// TODO: faster writeback, avoid to read the whole block in
+				// memory again
+				stored.merge(assocs, Operation.OVERWRITE);
+				update(stored.from, stored);
+			}
 		}
-	}
 
-	@Override
-	protected void onBeforeClose() {
-		cache.clear();
-	}
-
-	private void flush(AssociationBlock assocs) throws IOException {
-		update(assocs.from, assocs);
+		workingSet.clear();
 	}
 
 	@Override
@@ -169,50 +164,6 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 
 	long getAssociationCount() {
 		return associationCount;
-	}
-
-	LRUCache getCache() {
-		return cache;
-	}
-
-	// A simple LRU cache for association rows
-	class LRUCache extends LinkedHashMap<Integer, AssociationBlock> {
-		private static final long serialVersionUID = -5914565512322090452L;
-		private AtomicInteger cachedAssociationCount = new AtomicInteger(0);
-
-		@Override
-		public AssociationBlock put(Integer key, AssociationBlock value) {
-			AssociationBlock old = super.put(key, value);
-
-			if (old != null) {
-				cachedAssociationCount.addAndGet(-old.size);
-			}
-			cachedAssociationCount.addAndGet(value.size);
-
-			return old;
-		}
-
-		@Override
-		protected boolean removeEldestEntry(java.util.Map.Entry<Integer, AssociationBlock> eldest) {
-			boolean remove = size() >= maxCached;
-
-			if (remove) {
-
-				try {
-					flush(eldest.getValue());
-				} catch (IOException e) {
-					throw new IllegalStateException("Failed to flush eldest cache entry", e);
-				}
-
-				cachedAssociationCount.addAndGet(-eldest.getValue().size);
-			}
-
-			return remove;
-		}
-
-		long getAssociationCount() {
-			return cachedAssociationCount.longValue();
-		}
 	}
 
 	// NIO Serializer for association blocks
@@ -272,6 +223,41 @@ class CachedBlockStore extends BaseIndexedStore<AssociationBlock> {
 			// 4 + 4 + 4 + capacity * 4 + capacity * 4
 			// capacity + size + from + tos + values
 			return 12 + capacity * 8;
+		}
+	}
+
+	// In-memory working set of AssociationBlocks
+	private class WorkingSet {
+		private long associationCount;
+		private int blockCount;
+		private final Map<Integer, AssociationBlock> blocks = new ConcurrentHashMap<Integer, AssociationBlock>();
+
+		synchronized void merge(AssociationBlock assocs, Operation op) throws IOException {
+			if (associationCount + assocs.size > maxCached) {
+				flushWorkingSet();
+			}
+
+			AssociationBlock ws = blocks.get(assocs.from);
+
+			if (ws == null) {
+				// Reading the stored association ensures the operation order
+				AssociationBlock stored = CachedBlockStore.super.get(assocs.from);
+				AssociationBlock merged = stored == null ? assocs : assocs.interMerge(stored, op);
+
+				blocks.put(assocs.from, merged);
+				blockCount++;
+				associationCount += assocs.size;
+			} else {
+				synchronized (ws) {
+					associationCount += ws.merge(assocs, op);
+				}
+			}
+		}
+
+		public void clear() {
+			blocks.clear();
+			this.blockCount = 0;
+			this.associationCount = 0;
 		}
 	}
 }

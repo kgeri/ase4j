@@ -62,6 +62,7 @@ public class FileAssociationStoreImplBenchmark2 {
 				store.add(words.get(rnd.nextInt(WORDS)), words.get(rnd.nextInt(WORDS)), 1.0F, null);
 			}
 
+			System.err.println("Flushing...");
 			store.flush();
 
 			Result r = Benchmark.stop();
@@ -70,6 +71,7 @@ public class FileAssociationStoreImplBenchmark2 {
 					.println((ASSOCS * 1000) / r.time(TimeUnit.MILLISECONDS) + " inserts per sec");
 			System.err.println(((double) store.getStorageFile().length() / 1024 / 1.024 / r
 					.time(TimeUnit.MILLISECONDS)) + " Mb/s");
+			System.err.printf("%.2f seconds\n", r.time(TimeUnit.MILLISECONDS) / 1000.0);
 		} catch (Exception e) {
 			throw new AssertionError(e);
 		}

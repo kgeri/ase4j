@@ -84,7 +84,7 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 				this.toInt = tree;
 			} else {
 				// TODO Parametric order
-				this.toInt = new BTree<String, Integer>(512);
+				this.toInt = new BTree<String, Integer>(128);
 				this.toString = new HashMap<Integer, String>();
 				this.nextKey = new AtomicInteger(0);
 
@@ -116,7 +116,7 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 	}
 
 	@Override
-	public synchronized void add(long identifier, String entity) throws ObjectStoreException {
+	public void add(long identifier, String entity) throws ObjectStoreException {
 		toInt.set(entity, (int) identifier);
 		toString.put((int) identifier, entity);
 
@@ -127,13 +127,15 @@ public class StringStore implements ConfigurableObjectStore<String>, Closeable, 
 			nextKey.addAndGet(diff + 1);
 		}
 
-		try {
-			// Appending to file channel immediately
-			// TODO BTree mmap?
-			storageChannel.position(storageChannel.size());
-			serializer.writeImmediately(entity, (int) identifier, storageChannel);
-		} catch (IOException e) {
-			throw new ObjectStoreException(e);
+		synchronized (storageChannel) {
+			try {
+				// Appending to file channel immediately
+				// TODO BTree mmap?
+				storageChannel.position(storageChannel.size());
+				serializer.writeImmediately(entity, (int) identifier, storageChannel);
+			} catch (IOException e) {
+				throw new ObjectStoreException(e);
+			}
 		}
 	}
 

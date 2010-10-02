@@ -305,7 +305,7 @@ public abstract class BaseIndexedStore<T> implements Closeable, Flushable {
 			capacity <<= 1;
 		}
 
-		flush();
+		// flush();
 
 		// Opening a new store at a temp file
 		File dir = storageFile.getParentFile();
